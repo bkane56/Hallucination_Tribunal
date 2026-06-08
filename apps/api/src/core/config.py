@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     vector_db_provider: Literal["chromadb"] = "chromadb"
     chroma_persist_directory: str = "./data/chroma"
+    uploads_directory: str = "./data/uploads"
+    seed_directory: str = "./data/seed"
+    evals_directory: str = "./data/evals"
 
     max_upload_size_mb: int = Field(default=25, ge=1, le=100)
     chunk_size: int = Field(default=900, ge=100)

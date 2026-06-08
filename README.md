@@ -55,7 +55,7 @@ docker compose up --build
 | Phase | Status |
 |-------|--------|
 | 0 — Monorepo scaffold | Complete |
-| 1 — Backend foundation | Planned |
+| 1 — Backend foundation | Complete |
 | 2 — Document ingestion | Planned |
 | 3 — Retrieval | Planned |
 | 4 — Tribunal pipeline | Planned |

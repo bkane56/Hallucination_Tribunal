@@ -11,3 +11,4 @@ def test_health_returns_ok() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["version"] == "0.1.0"
+    assert payload["environment"] == "test"

@@ -2,6 +2,14 @@
 
 FastAPI backend for document ingestion, retrieval, and the Witness → Prosecutor → Judge tribunal pipeline.
 
+## Phase 1 — Backend foundation
+
+- Pydantic models for documents, retrieval, and tribunal results
+- Structured logging and global error handling
+- Provider protocols for LLM, embeddings, and vector storage
+- Data directory bootstrap on startup
+- `GET /health` and `GET /health/ready`
+
 ## Development
 
 ```bash
