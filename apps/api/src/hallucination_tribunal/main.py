@@ -27,14 +27,17 @@ def create_app() -> FastAPI:
         title="The Hallucination Tribunal API",
         version=__version__,
         lifespan=lifespan,
+        root_path=settings.api_root_path,
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[settings.frontend_url, "http://localhost:3000"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    cors_kwargs: dict = {
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+        "allow_origins": settings.cors_origins,
+    }
+    if settings.app_env == "production":
+        cors_kwargs["allow_origin_regex"] = r"https://.*\.vercel\.app"
+    app.add_middleware(CORSMiddleware, **cors_kwargs)
     app.include_router(router)
     return app
 

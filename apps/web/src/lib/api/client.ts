@@ -1,5 +1,26 @@
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+import type {
+  Document,
+  EvaluationRun,
+  SampleDocument,
+  SampleDocumentImportResult,
+  TribunalResult,
+} from "@/lib/types";
+
+function getApiBaseUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  if (explicit) {
+    return explicit.replace(/\/$/, "");
+  }
+
+  const routePrefix = process.env.NEXT_PUBLIC_API_ROUTE_PREFIX?.trim();
+  if (routePrefix) {
+    return routePrefix.replace(/\/$/, "");
+  }
+
+  return "http://localhost:8000";
+}
+
+const BACKEND_URL = getApiBaseUrl();
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${BACKEND_URL}${path}`, options);
@@ -14,7 +35,7 @@ export const api = {
   health: () => request<{ status: string; version: string }>("/health"),
 
   listDocuments: () =>
-    request<{ documents: import("./types").Document[] }>("/documents"),
+    request<{ documents: Document[] }>("/documents"),
 
   uploadDocument: async (file: File) => {
     const formData = new FormData();
@@ -26,15 +47,15 @@ export const api = {
   },
 
   listSampleDocuments: () =>
-    request<{ samples: import("./types").SampleDocument[]; categories: string[] }>(
+    request<{ samples: SampleDocument[]; categories: string[] }>(
       "/documents/samples"
     ),
 
   importSampleDocuments: (sampleIds: string[]) =>
     request<{
-      imported: import("./types").SampleDocumentImportResult[];
-      skipped: import("./types").SampleDocumentImportResult[];
-      errors: import("./types").SampleDocumentImportResult[];
+      imported: SampleDocumentImportResult[];
+      skipped: SampleDocumentImportResult[];
+      errors: SampleDocumentImportResult[];
     }>("/documents/samples/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,7 +74,7 @@ export const api = {
     ),
 
   askTribunal: (question: string, documentIds?: string[], topK = 6) =>
-    request<import("./types").TribunalResult>("/tribunal/ask", {
+    request<TribunalResult>("/tribunal/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -64,12 +85,12 @@ export const api = {
     }),
 
   runEvaluations: () =>
-    request<import("./types").EvaluationRun>("/evaluations/run", {
+    request<EvaluationRun>("/evaluations/run", {
       method: "POST",
     }),
 
   listEvaluationRuns: () =>
-    request<{ runs: import("./types").EvaluationRun[] }>("/evaluations/runs"),
+    request<{ runs: EvaluationRun[] }>("/evaluations/runs"),
 };
 
 export { BACKEND_URL };

@@ -60,6 +60,26 @@ yarn dev
 
 Open http://localhost:3000
 
+## Deployment
+
+Production deploys **web + API together on Vercel** via [Vercel Services](https://vercel.com/docs/services). Configure your existing Ollama host in `OLLAMA_BASE_URL`.
+
+See [docs/deployment.md](docs/deployment.md) for step-by-step instructions.
+
+```bash
+# Deploy everything to Vercel
+./scripts/deploy.sh vercel
+
+# Local multi-service dev
+./scripts/deploy.sh dev
+```
+
+Optional Docker stack for local API + Ollama (not used for Vercel production):
+
+```bash
+./scripts/deploy.sh api
+```
+
 ### Docker
 
 ```bash

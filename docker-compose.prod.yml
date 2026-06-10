@@ -1,0 +1,39 @@
+# Production stack for Railway, Render, Fly.io, or any Docker host.
+# The Next.js UI should be deployed separately on Vercel.
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./infra/ollama/entrypoint.sh:/entrypoint.sh:ro
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      OLLAMA_BASE_URL: http://ollama:11434
+      CHROMA_PERSIST_DIRECTORY: /app/data/chroma
+      SQLITE_DATABASE_PATH: /app/data/tribunal.db
+      UPLOAD_DIRECTORY: /app/data/uploads
+      SEED_DIRECTORY: /app/data/seed
+      EVALS_DIRECTORY: /app/data/evals
+    volumes:
+      - tribunal_data:/app/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  tribunal_data:

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "experimentalServices": {
+    "web": {
+      "entrypoint": "apps/web",
+      "routePrefix": "/",
+      "framework": "nextjs"
+    },
+    "api": {
+      "entrypoint": "apps/api/src/hallucination_tribunal/main.py",
+      "routePrefix": "/server",
+      "framework": "fastapi",
+      "maxDuration": 300,
+      "memory": 3008,
+      "excludeFiles": "{apps/api/tests/**,**/test_*.py,**/*.test.py,data/**,**/.venv/**,**/__pycache__/**}"
+    }
+  }
+}

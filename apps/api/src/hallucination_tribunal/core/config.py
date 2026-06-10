@@ -1,10 +1,11 @@
 """Application configuration from environment variables."""
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +28,9 @@ class Settings(BaseSettings):
     app_env: str = "development"
     frontend_url: str = "http://localhost:3000"
     backend_url: str = "http://localhost:8000"
+    cors_allowed_origins: str = ""
+    api_root_path: str = ""
+    storage_root: str = ""
 
     llm_provider: Literal["ollama", "openai"] = "ollama"
     ollama_base_url: str = "http://localhost:11434"
@@ -53,9 +57,28 @@ class Settings(BaseSettings):
     seed_directory: str = Field(default="./data/seed")
     evals_directory: str = Field(default="./data/evals")
 
+    @model_validator(mode="after")
+    def apply_platform_defaults(self) -> "Settings":
+        if os.getenv("VERCEL") and not self.storage_root.strip():
+            self.storage_root = "/tmp/hallucination-tribunal"
+        if os.getenv("VERCEL") and not self.api_root_path.strip():
+            self.api_root_path = os.getenv("API_ROOT_PATH", "/server")
+        return self
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def cors_origins(self) -> list[str]:
+        origins = {self.frontend_url.strip(), "http://localhost:3000"}
+        if self.cors_allowed_origins.strip():
+            origins.update(
+                origin.strip()
+                for origin in self.cors_allowed_origins.split(",")
+                if origin.strip()
+            )
+        return sorted(origins)
 
     @property
     def project_root(self) -> Path:
@@ -68,6 +91,13 @@ class Settings(BaseSettings):
         p = Path(path)
         if p.is_absolute():
             return p
+        if self.storage_root.strip():
+            root = Path(self.storage_root)
+            if path.startswith("./data/"):
+                remainder = path.removeprefix("./data/").lstrip("/")
+                return root / remainder if remainder else root
+            if path == "./data":
+                return root
         return self.project_root / path
 
     def ensure_data_directories(self) -> list[Path]:
