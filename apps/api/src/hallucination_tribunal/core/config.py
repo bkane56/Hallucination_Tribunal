@@ -67,6 +67,10 @@ class Settings(BaseSettings):
         return self
 
     @property
+    def is_serverless(self) -> bool:
+        return bool(os.getenv("VERCEL"))
+
+    @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
 

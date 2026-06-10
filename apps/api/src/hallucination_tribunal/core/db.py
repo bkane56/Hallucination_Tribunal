@@ -81,8 +81,10 @@ class Database:
     async def session(self) -> AsyncIterator[aiosqlite.Connection]:
         if not self._initialized:
             await self.initialize()
-        conn = await aiosqlite.connect(self.db_path)
+        conn = await aiosqlite.connect(self.db_path, timeout=30)
         conn.row_factory = aiosqlite.Row
+        await conn.execute("PRAGMA journal_mode=WAL")
+        await conn.execute("PRAGMA busy_timeout=30000")
         try:
             yield conn
             await conn.commit()

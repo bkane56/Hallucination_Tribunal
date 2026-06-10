@@ -15,15 +15,23 @@ COLLECTION_NAME = "tribunal_chunks"
 class ChromaVectorStore(VectorStore):
     def __init__(self):
         settings = get_settings()
-        persist_dir = str(settings.resolve_path(settings.chroma_persist_directory))
-        self.client = chromadb.PersistentClient(
-            path=persist_dir,
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
+        chroma_settings = ChromaSettings(anonymized_telemetry=False)
+        if settings.is_serverless:
+            # PersistentClient locks SQLite files on disk; serverless runtimes raise EBUSY.
+            self.client = chromadb.EphemeralClient(settings=chroma_settings)
+        else:
+            persist_dir = str(settings.resolve_path(settings.chroma_persist_directory))
+            self.client = chromadb.PersistentClient(
+                path=persist_dir,
+                settings=chroma_settings,
+            )
         self.collection = self.client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
         )
+
+    def count(self) -> int:
+        return self.collection.count()
 
     def upsert_chunks(
         self,
@@ -100,3 +108,8 @@ def get_vector_store() -> ChromaVectorStore:
     if _vector_store is None:
         _vector_store = ChromaVectorStore()
     return _vector_store
+
+
+def reset_vector_store() -> None:
+    global _vector_store
+    _vector_store = None

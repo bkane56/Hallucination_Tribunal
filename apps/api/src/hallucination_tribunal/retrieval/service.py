@@ -39,9 +39,39 @@ class RetrievalService:
         top_k = top_k or self.settings.top_k_default
         mode = self.settings.retrieval_mode
 
+        await self._ensure_vector_index()
         if mode == "hybrid":
             return await self._hybrid_retrieve(question, top_k, document_ids)
         return await self._vector_retrieve(question, top_k, document_ids)
+
+    async def _ensure_vector_index(self) -> None:
+        """Rebuild in-memory vectors on serverless when SQLite has chunks but Chroma is empty."""
+        if not self.settings.is_serverless:
+            return
+        if self.vector_store.count() > 0:
+            return
+
+        chunks = await self.db.get_all_chunks()
+        if not chunks:
+            return
+
+        docs = {d.document_id: d for d in await self.db.list_documents()}
+        texts = [c.text for c in chunks]
+        embeddings = self.embedder.embed_texts(texts)
+        metadatas = [
+            {
+                "document_id": chunk.document_id,
+                "filename": docs.get(chunk.document_id, None).filename
+                if docs.get(chunk.document_id)
+                else "unknown",
+                "chunk_index": chunk.chunk_index,
+                "source_page": chunk.source_page or -1,
+                "source_section": chunk.source_section or "",
+            }
+            for chunk in chunks
+        ]
+        self.vector_store.upsert_chunks(chunks, embeddings, metadatas)
+        logger.info("vector_index_hydrated", chunk_count=len(chunks))
 
     async def _vector_retrieve(
         self,
