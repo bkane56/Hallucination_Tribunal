@@ -25,6 +25,22 @@ export const api = {
     );
   },
 
+  listSampleDocuments: () =>
+    request<{ samples: import("./types").SampleDocument[]; categories: string[] }>(
+      "/documents/samples"
+    ),
+
+  importSampleDocuments: (sampleIds: string[]) =>
+    request<{
+      imported: import("./types").SampleDocumentImportResult[];
+      skipped: import("./types").SampleDocumentImportResult[];
+      errors: import("./types").SampleDocumentImportResult[];
+    }>("/documents/samples/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sample_ids: sampleIds }),
+    }),
+
   deleteDocument: (id: string) =>
     request<{ status: string; document_id: string }>(`/documents/${id}`, {
       method: "DELETE",

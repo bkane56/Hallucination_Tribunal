@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import type { Document } from "@/lib/types";
+import { SampleGovernancePanel } from "./SampleGovernancePanel";
 import { UploadPanel } from "./UploadPanel";
 
 export function CorpusManager() {
@@ -39,6 +40,7 @@ export function CorpusManager() {
 
   return (
     <div className="space-y-6">
+      <SampleGovernancePanel onImported={loadDocuments} />
       <UploadPanel onUploaded={loadDocuments} />
       <div className="rounded-lg border border-paper-line bg-ivory p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">

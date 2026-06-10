@@ -13,6 +13,8 @@ vi.mock("@/lib/api/client", () => ({
     deleteDocument: (...args: unknown[]) => mockDelete(...args),
     rebuildIndex: (...args: unknown[]) => mockRebuild(...args),
     uploadDocument: vi.fn(),
+    listSampleDocuments: vi.fn().mockResolvedValue({ samples: [], categories: [] }),
+    importSampleDocuments: vi.fn().mockResolvedValue({ imported: [], skipped: [], errors: [] }),
   },
 }));
 

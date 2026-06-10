@@ -43,6 +43,42 @@ class DocumentUploadResponse(BaseModel):
     chunk_count: int
 
 
+class SampleDocumentResponse(BaseModel):
+    sample_id: str
+    title: str
+    category: str
+    source: str
+    url: str
+    description: str
+    good_for: str = ""
+    filename: str
+    already_imported: bool = False
+
+
+class SampleDocumentListResponse(BaseModel):
+    samples: list[SampleDocumentResponse]
+    categories: list[str]
+
+
+class SampleDocumentImportRequest(BaseModel):
+    sample_ids: list[str] = Field(min_length=1)
+
+
+class SampleDocumentImportResult(BaseModel):
+    sample_id: str
+    document_id: str | None = None
+    filename: str | None = None
+    status: str
+    chunk_count: int = 0
+    message: str | None = None
+
+
+class SampleDocumentImportResponse(BaseModel):
+    imported: list[SampleDocumentImportResult]
+    skipped: list[SampleDocumentImportResult]
+    errors: list[SampleDocumentImportResult]
+
+
 class TribunalAskRequest(BaseModel):
     question: str = Field(min_length=1)
     document_ids: list[str] | None = None

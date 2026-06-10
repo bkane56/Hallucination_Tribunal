@@ -15,6 +15,11 @@ from hallucination_tribunal.models.schemas import (
     EvaluationRunResponse,
     EvaluationRunsListResponse,
     HealthResponse,
+    SampleDocumentImportRequest,
+    SampleDocumentImportResponse,
+    SampleDocumentImportResult,
+    SampleDocumentListResponse,
+    SampleDocumentResponse,
     TribunalAskRequest,
     TribunalAskResponse,
 )
@@ -61,6 +66,73 @@ async def upload_document(file: UploadFile = File(...)):
         status=doc.status.value,
         chunk_count=doc.chunk_count,
     )
+
+
+@router.get("/documents/samples", response_model=SampleDocumentListResponse)
+async def list_sample_documents():
+    service = DocumentService()
+    existing_filenames = {doc.filename for doc in await service.list_documents()}
+    samples = []
+    categories: list[str] = []
+    for sample in service.list_sample_documents():
+        if sample.category not in categories:
+            categories.append(sample.category)
+        samples.append(
+            SampleDocumentResponse(
+                sample_id=sample.sample_id,
+                title=sample.title,
+                category=sample.category,
+                source=sample.source,
+                url=sample.url,
+                description=sample.description,
+                good_for=sample.good_for,
+                filename=sample.filename,
+                already_imported=sample.filename in existing_filenames,
+            )
+        )
+    return SampleDocumentListResponse(samples=samples, categories=categories)
+
+
+@router.post("/documents/samples/import", response_model=SampleDocumentImportResponse)
+async def import_sample_documents(request: SampleDocumentImportRequest):
+    service = DocumentService()
+    result = await service.import_sample_documents(request.sample_ids)
+
+    imported: list[SampleDocumentImportResult] = []
+    for item in result["imported"]:
+        doc = item["document"]
+        imported.append(
+            SampleDocumentImportResult(
+                sample_id=str(item["sample_id"]),
+                document_id=doc.document_id,
+                filename=doc.filename,
+                status=doc.status.value,
+                chunk_count=doc.chunk_count,
+            )
+        )
+
+    skipped: list[SampleDocumentImportResult] = []
+    for item in result["skipped"]:
+        doc = item["document"]
+        skipped.append(
+            SampleDocumentImportResult(
+                sample_id=str(item["sample_id"]),
+                document_id=doc.document_id,
+                filename=doc.filename,
+                status="skipped",
+                chunk_count=doc.chunk_count,
+                message="Already in corpus",
+            )
+        )
+    errors = [
+        SampleDocumentImportResult(
+            sample_id=err["sample_id"],
+            status="error",
+            message=err["error"],
+        )
+        for err in result["errors"]
+    ]
+    return SampleDocumentImportResponse(imported=imported, skipped=skipped, errors=errors)
 
 
 @router.get("/documents", response_model=DocumentListResponse)

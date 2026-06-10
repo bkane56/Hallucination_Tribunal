@@ -14,6 +14,11 @@ from hallucination_tribunal.core.providers.chroma_store import get_vector_store
 from hallucination_tribunal.core.providers.local_embedding import get_embedding_provider
 from hallucination_tribunal.documents.chunker import chunk_segments
 from hallucination_tribunal.documents.extractors import TextExtractor
+from hallucination_tribunal.documents.sample_catalog import (
+    SampleDocument,
+    get_sample_document,
+    list_sample_documents,
+)
 from hallucination_tribunal.models.domain import Document, DocumentStatus
 
 logger = get_logger(__name__)
@@ -34,26 +39,78 @@ class DocumentService:
             ext = "md"
         return ext
 
-    async def upload_document(self, file: UploadFile) -> Document:
-        file_type = self._get_file_type(file.filename or "unknown")
+    def list_sample_documents(self) -> list[SampleDocument]:
+        return list_sample_documents()
+
+    async def find_document_by_filename(self, filename: str) -> Document | None:
+        for doc in await self.db.list_documents():
+            if doc.filename == filename:
+                return doc
+        return None
+
+    async def import_sample_document(self, sample_id: str) -> tuple[Document, bool]:
+        sample = get_sample_document(sample_id)
+        if not sample:
+            raise ValueError(f"Unknown sample document: {sample_id}")
+
+        existing = await self.find_document_by_filename(sample.filename)
+        if existing:
+            return existing, True
+
+        content = sample.render_markdown().encode("utf-8")
+        return await self._ingest_bytes(
+            filename=sample.filename,
+            file_type="md",
+            content=content,
+        ), False
+
+    async def import_sample_documents(self, sample_ids: list[str]) -> dict[str, object]:
+        imported: list[dict[str, object]] = []
+        skipped: list[dict[str, object]] = []
+        errors: list[dict[str, str]] = []
+
+        for sample_id in sample_ids:
+            try:
+                doc, already_present = await self.import_sample_document(sample_id)
+                if already_present:
+                    skipped.append({"sample_id": sample_id, "document": doc})
+                else:
+                    imported.append({"sample_id": sample_id, "document": doc})
+            except ValueError as exc:
+                errors.append({"sample_id": sample_id, "error": str(exc)})
+            except Exception as exc:
+                logger.error("sample_import_failed", sample_id=sample_id, error=str(exc))
+                errors.append({"sample_id": sample_id, "error": str(exc)})
+
+        return {
+            "imported": imported,
+            "skipped": skipped,
+            "errors": errors,
+        }
+
+    async def _ingest_bytes(
+        self,
+        *,
+        filename: str,
+        file_type: str,
+        content: bytes,
+    ) -> Document:
         if file_type not in ALLOWED_EXTENSIONS:
             raise ValueError(f"Unsupported file type: {file_type}")
-
-        content = await file.read()
         if len(content) > self.settings.max_upload_bytes:
             raise ValueError(
                 f"File exceeds maximum size of {self.settings.max_upload_size_mb}MB"
             )
 
         document_id = str(uuid4())
-        safe_filename = f"{document_id}_{Path(file.filename or 'upload').name}"
+        safe_filename = f"{document_id}_{Path(filename).name}"
         file_path = self.upload_dir / safe_filename
         file_path.write_bytes(content)
 
         text_hash = hashlib.sha256(content).hexdigest()
         doc = Document(
             document_id=document_id,
-            filename=file.filename or safe_filename,
+            filename=filename,
             file_type=file_type,
             original_path=str(file_path),
             text_hash=text_hash,
@@ -71,6 +128,18 @@ class DocumentService:
             raise
 
         return doc
+
+    async def upload_document(self, file: UploadFile) -> Document:
+        file_type = self._get_file_type(file.filename or "unknown")
+        if file_type not in ALLOWED_EXTENSIONS:
+            raise ValueError(f"Unsupported file type: {file_type}")
+
+        content = await file.read()
+        return await self._ingest_bytes(
+            filename=file.filename or "upload",
+            file_type=file_type,
+            content=content,
+        )
 
     async def _index_document(self, doc: Document, file_path: Path) -> None:
         segments = TextExtractor.extract(file_path, doc.file_type)

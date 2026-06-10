@@ -16,6 +16,27 @@ export interface Document {
   updated_at: string;
 }
 
+export interface SampleDocument {
+  sample_id: string;
+  title: string;
+  category: string;
+  source: string;
+  url: string;
+  description: string;
+  good_for: string;
+  filename: string;
+  already_imported: boolean;
+}
+
+export interface SampleDocumentImportResult {
+  sample_id: string;
+  document_id?: string | null;
+  filename?: string | null;
+  status: string;
+  chunk_count: number;
+  message?: string | null;
+}
+
 export interface RetrievedSource {
   chunk_id: string;
   document_id: string;

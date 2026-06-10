@@ -1,15 +1,13 @@
 # The Hallucination Tribunal
 
-A portfolio-quality RAG application that answers questions from a controlled document corpus and subjects each answer to an adversarial review process: Witness → Prosecutor → Judge.
+A portfolio RAG application that answers questions from a controlled document corpus and subjects each answer to adversarial review: **Witness → Prosecutor → Judge**. Built to demonstrate retrieval-augmented generation, multi-agent orchestration, and claim-level verification in a local-first stack.
 
-## Features
+## What It Demonstrates
 
-- Document upload and indexing (PDF, MD, TXT, DOCX, HTML)
-- Hybrid retrieval (vector + BM25)
-- Three-agent tribunal pipeline with claim-level verification
-- Claim Docket UI with sortable verdict table
-- Evaluation dashboard with automated test cases
-- Local-first privacy (Ollama + ChromaDB)
+- Hybrid retrieval (vector + BM25) with structured, citeable answers
+- Multi-agent tribunal pipeline with per-claim verdicts
+- Document ingestion (PDF, MD, TXT, DOCX, HTML) and evaluation dashboard
+- Privacy-conscious defaults (Ollama + ChromaDB; OpenAI optional)
 
 ## Tech Stack
 
@@ -20,17 +18,23 @@ A portfolio-quality RAG application that answers questions from a controlled doc
 | Vector DB | ChromaDB |
 | Embeddings | sentence-transformers (local) |
 | LLM | Ollama (default), OpenAI (optional) |
-| Package managers | yarn (frontend), uv (backend) |
+| Tooling | yarn (frontend), uv (backend) |
 
-## Local Setup
+## Sample Data
+
+The demo ships with ready-to-use corpus content so reviewers can try the tribunal without uploading files.
+
+**Curated AI governance library (17 documents)** — Import from the Corpus page. Each entry is a structured summary of a public standard or policy template (NIST AI RMF, GovAI Coalition resources, university GenAI policies, public-sector guidance) with source URLs and governance use cases. Catalog lives in `apps/api/src/hallucination_tribunal/documents/sample_catalog.py`.
+
+**Seed documents (`data/seed/`)** — Mix of realistic internal policies (AI usage, data privacy, incident response, engineering standards) and a fictional *Dragon Sanctuary Care Guide* included to surface unsupported claims and test the prosecutor/judge pipeline.
+
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 20+
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/)
-- [yarn](https://yarnpkg.com/)
-- [Ollama](https://ollama.com/) with a chat model installed (default: `llama3.1:8b`; run `ollama list` to verify)
+- Node.js 20+, Python 3.12+
+- [uv](https://docs.astral.sh/uv/), [yarn](https://yarnpkg.com/)
+- [Ollama](https://ollama.com/) with a chat model (default: `llama3.1:8b`)
 
 ### Environment
 
@@ -62,12 +66,12 @@ Open http://localhost:3000
 docker compose up --build
 ```
 
-## Usage
+## Try the Demo
 
-1. Upload seed documents from `data/seed/` via the Corpus page
-2. Ask a question on the Tribunal page
-3. Review Witness Answer, Prosecutor Objections, Claim Docket, and Final Ruling
-4. Run evaluations from the Evaluation Dashboard
+1. On **Corpus**, import sample governance documents or upload files from `data/seed/`
+2. On **Tribunal**, ask a policy question (e.g. *What are our rules for external LLM APIs?*)
+3. Review Witness answer, Prosecutor objections, Claim Docket, and Final Ruling
+4. Run automated evaluations from the Evaluation Dashboard
 
 ## Tests
 
@@ -78,7 +82,7 @@ cd apps/api && uv run pytest --cov=hallucination_tribunal --cov-report=term-miss
 # Frontend
 cd apps/web && yarn test:coverage
 
-# End-to-end (Playwright; starts Next.js dev server automatically)
+# End-to-end (Playwright)
 cd apps/web && yarn playwright install chromium && yarn test:e2e
 ```
 

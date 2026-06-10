@@ -132,6 +132,36 @@ describe("api client", () => {
     await expect(api.listDocuments()).rejects.toThrow("Request failed");
   });
 
+  it("lists sample governance documents", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        samples: [{ sample_id: "nist-ai-rmf", title: "NIST AI RMF" }],
+        categories: ["NIST & Federal Standards"],
+      }),
+    } as Response);
+
+    const result = await api.listSampleDocuments();
+    expect(result.samples).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledWith(`${BACKEND_URL}/documents/samples`, undefined);
+  });
+
+  it("imports sample governance documents", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ imported: [], skipped: [], errors: [] }),
+    } as Response);
+
+    await api.importSampleDocuments(["nist-ai-rmf", "nist-airc"]);
+    expect(fetch).toHaveBeenCalledWith(
+      `${BACKEND_URL}/documents/samples/import`,
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+  });
+
   it("asks tribunal with JSON body", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
