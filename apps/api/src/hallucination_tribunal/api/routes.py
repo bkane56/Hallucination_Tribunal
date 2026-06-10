@@ -203,7 +203,7 @@ async def ask_tribunal(request: TribunalAskRequest):
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Tribunal pipeline failed: {exc}",
+            detail=f"Tribunal pipeline failed ({type(exc).__name__}): {exc}",
             headers={"X-Error-Code": "TRIBUNAL_ERROR"},
         ) from exc
 

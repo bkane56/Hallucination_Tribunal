@@ -111,11 +111,12 @@ class Settings(BaseSettings):
 
     def ensure_data_directories(self) -> list[Path]:
         paths = [
-            self.resolve_path(self.chroma_persist_directory),
             self.resolve_path(self.upload_directory),
             self.resolve_path(self.seed_directory),
             self.resolve_path(self.evals_directory),
         ]
+        if not self.is_serverless:
+            paths.insert(0, self.resolve_path(self.chroma_persist_directory))
         for path in paths:
             path.mkdir(parents=True, exist_ok=True)
         return paths

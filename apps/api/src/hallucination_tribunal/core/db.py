@@ -67,6 +67,8 @@ CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
 
 class Database:
     _init_lock = asyncio.Lock()
+    _serverless_conn: aiosqlite.Connection | None = None
+    _serverless_conn_lock = asyncio.Lock()
 
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or get_settings()
@@ -74,28 +76,56 @@ class Database:
         self._initialized = False
 
     @classmethod
-    async def _configure_connection(cls, conn: aiosqlite.Connection) -> None:
-        await conn.execute("PRAGMA journal_mode=WAL")
+    async def _configure_connection(
+        cls, conn: aiosqlite.Connection, *, serverless: bool
+    ) -> None:
+        # WAL sidecar files (-wal/-shm) are unreliable on Vercel /tmp and cause EBUSY.
+        journal_mode = "DELETE" if serverless else "WAL"
+        await conn.execute(f"PRAGMA journal_mode={journal_mode}")
         await conn.execute("PRAGMA busy_timeout=30000")
+
+    async def _open_serverless_connection(self) -> aiosqlite.Connection:
+        async with self._serverless_conn_lock:
+            if self._serverless_conn is None:
+                conn = await aiosqlite.connect(self.db_path, timeout=30)
+                conn.row_factory = aiosqlite.Row
+                await self._configure_connection(conn, serverless=True)
+                self._serverless_conn = conn
+            return self._serverless_conn
 
     async def initialize(self) -> None:
         async with self._init_lock:
             if self._initialized:
                 return
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
-            async with aiosqlite.connect(self.db_path, timeout=30) as conn:
-                await self._configure_connection(conn)
+            if self.settings.is_serverless:
+                conn = await self._open_serverless_connection()
                 await conn.executescript(SCHEMA)
                 await conn.commit()
+            else:
+                async with aiosqlite.connect(self.db_path, timeout=30) as conn:
+                    await self._configure_connection(conn, serverless=False)
+                    await conn.executescript(SCHEMA)
+                    await conn.commit()
             self._initialized = True
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[aiosqlite.Connection]:
         if not self._initialized:
             await self.initialize()
+        if self.settings.is_serverless:
+            conn = await self._open_serverless_connection()
+            try:
+                yield conn
+                await conn.commit()
+            except Exception:
+                await conn.rollback()
+                raise
+            return
+
         conn = await aiosqlite.connect(self.db_path, timeout=30)
         conn.row_factory = aiosqlite.Row
-        await self._configure_connection(conn)
+        await self._configure_connection(conn, serverless=False)
         try:
             yield conn
             await conn.commit()
@@ -364,3 +394,4 @@ def get_database() -> Database:
 def reset_database() -> None:
     global _db
     _db = None
+    Database._serverless_conn = None
