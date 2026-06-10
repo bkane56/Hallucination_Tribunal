@@ -7,7 +7,7 @@
       "framework": "nextjs"
     },
     "api": {
-      "entrypoint": "apps/api/src/hallucination_tribunal/main.py",
+      "entrypoint": "apps/api",
       "routePrefix": "/server",
       "framework": "fastapi",
       "maxDuration": 300,
