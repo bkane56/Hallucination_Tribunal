@@ -11,7 +11,9 @@
 
 OpenAI requires explicit `LLM_PROVIDER=openai` and `OPENAI_API_KEY=sk-********` in `.env`.
 
-Documents are not sent to hosted embedding APIs unless `EMBEDDING_PROVIDER=openai`.
+Document uploads do not use an LLM. They are chunked and embedded for vector search only.
+
+Documents are not sent to hosted embedding APIs unless `EMBEDDING_PROVIDER=openai`. Use `local` or `ollama` to keep proprietary text on your infrastructure.
 
 ## Upload Security
 

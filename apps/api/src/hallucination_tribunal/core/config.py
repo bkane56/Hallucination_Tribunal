@@ -35,10 +35,11 @@ class Settings(BaseSettings):
     llm_provider: Literal["ollama", "openai"] = "ollama"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
+    ollama_embedding_model: str = "nomic-embed-text"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
-    embedding_provider: Literal["local", "openai"] = "local"
+    embedding_provider: Literal["local", "ollama", "openai"] = "local"
     local_embedding_model: str = "all-MiniLM-L6-v2"
     openai_embedding_model: str = "text-embedding-3-small"
 

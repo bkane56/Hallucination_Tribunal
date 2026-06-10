@@ -65,6 +65,12 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 @lru_cache
 def get_embedding_provider() -> EmbeddingProvider:
     settings = get_settings()
+    if settings.embedding_provider == "ollama":
+        from hallucination_tribunal.core.providers.ollama_embedding import (
+            OllamaEmbeddingProvider,
+        )
+
+        return OllamaEmbeddingProvider()
     if settings.embedding_provider == "openai":
         return OpenAIEmbeddingProvider()
     try:

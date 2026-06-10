@@ -71,9 +71,8 @@ Do **not** set `NEXT_PUBLIC_BACKEND_URL` unless you want a separate API host. Le
 | `LLM_PROVIDER` | `ollama` |
 | `OLLAMA_BASE_URL` | Your Ollama URL, e.g. `https://ollama.example.com` |
 | `OLLAMA_MODEL` | `llama3.1:8b` |
-| `EMBEDDING_PROVIDER` | `openai` |
-| `OPENAI_API_KEY` | Your OpenAI key |
-| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` |
+| `EMBEDDING_PROVIDER` | `ollama` |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` |
 
 Copy the full template from [`.env.vercel.example`](../.env.vercel.example).
 
@@ -125,7 +124,7 @@ Your Ollama host must accept requests from Vercel's serverless network:
 
 - Set `OLLAMA_ORIGINS` or reverse-proxy auth if needed
 - Use HTTPS for public endpoints
-- Ensure the model is pulled: `ollama pull llama3.1:8b`
+- Ensure models are pulled: `ollama pull llama3.1:8b` and `ollama pull nomic-embed-text`
 
 If Ollama runs on your laptop, expose it with [Tailscale Funnel](https://tailscale.com/kb/1242/tailscale-funnel) or [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) and set `OLLAMA_BASE_URL` to that URL.
 
@@ -136,7 +135,7 @@ If Ollama runs on your laptop, expose it with [Tailscale Funnel](https://tailsca
 | Topic | Vercel behavior |
 |---|---|
 | Tribunal timeout | Up to 300s on Pro (`maxDuration` in `vercel.json`) |
-| Bundle size | Python function max ~500 MB — use OpenAI embeddings, not local sentence-transformers |
+| Bundle size | Python function max ~500 MB — use `EMBEDDING_PROVIDER=ollama`, not local sentence-transformers |
 | Persistence | `/tmp` storage resets between cold starts — demo/portfolio use |
 | Ollama | External HTTP endpoint only — not run inside Vercel functions |
 
@@ -161,7 +160,8 @@ See [`docker-compose.prod.yml`](../docker-compose.prod.yml).
 | 404 on `/server/health` | Confirm Framework Preset is **Services** and root `vercel.json` is deployed |
 | UI calls `localhost:8000` in prod | Set `NEXT_PUBLIC_API_ROUTE_PREFIX=/server`, redeploy web |
 | Ollama model not found | Pull model on Ollama host; verify `OLLAMA_MODEL` matches `ollama list` |
-| Build exceeds size limit | Use `EMBEDDING_PROVIDER=openai`; do not install `[local-embeddings]` |
+| Build exceeds size limit | Use `EMBEDDING_PROVIDER=ollama`; do not install `[local-embeddings]` |
+| Upload fails with OpenAI error | Set `EMBEDDING_PROVIDER=ollama` so document chunks stay on your Ollama host |
 | CORS errors | Same-origin `/server` routes should not need CORS; check `FRONTEND_URL` if using split deploy |
 | Uploads vanish | Expected on serverless `/tmp` — use Docker locally for persistent data |
 
