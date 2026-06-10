@@ -1,25 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
   title: "The Hallucination Tribunal",
   description:
-    "RAG-powered AI answers reviewed by Witness, Prosecutor, and Judge agents.",
+    "RAG-powered AI application with adversarial claim verification",
 };
 
 export default function RootLayout({
@@ -28,14 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="flex min-h-full flex-col bg-warm-parchment text-charcoal">
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+    <html lang="en">
+      <body>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

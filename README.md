@@ -1,40 +1,52 @@
 # The Hallucination Tribunal
 
-RAG-powered AI application that answers questions from a controlled document corpus, then subjects each answer to an adversarial review by Witness, Prosecutor, and Judge agents.
+A portfolio-quality RAG application that answers questions from a controlled document corpus and subjects each answer to an adversarial review process: Witness → Prosecutor → Judge.
 
-## Monorepo layout
+## Features
 
-```text
-apps/
-  api/    FastAPI backend (uv)
-  web/    Next.js frontend (yarn)
-data/     Local uploads, Chroma vectors, eval datasets
-docs/     Architecture and design documentation
-```
+- Document upload and indexing (PDF, MD, TXT, DOCX, HTML)
+- Hybrid retrieval (vector + BM25)
+- Three-agent tribunal pipeline with claim-level verification
+- Claim Docket UI with sortable verdict table
+- Evaluation dashboard with automated test cases
+- Local-first privacy (Ollama + ChromaDB)
 
-## Prerequisites
+## Tech Stack
 
-- [uv](https://docs.astral.sh/uv/) for the Python backend
-- [yarn](https://yarnpkg.com/) for the Next.js frontend
-- Optional: [Ollama](https://ollama.com/) for local LLM inference (Phase 4+)
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15, TypeScript, Tailwind CSS |
+| Backend | Python 3.12, FastAPI, Pydantic |
+| Vector DB | ChromaDB |
+| Embeddings | sentence-transformers (local) |
+| LLM | Ollama (default), OpenAI (optional) |
+| Package managers | yarn (frontend), uv (backend) |
 
-## Quick start
+## Local Setup
 
-1. Copy environment variables:
+### Prerequisites
+
+- Node.js 20+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/)
+- [yarn](https://yarnpkg.com/)
+- [Ollama](https://ollama.com/) with a chat model installed (default: `llama3.1:8b`; run `ollama list` to verify)
+
+### Environment
 
 ```bash
 cp .env.example .env
 ```
 
-2. Start the API:
+### Backend
 
 ```bash
 cd apps/api
 uv sync --extra dev
-uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn hallucination_tribunal.main:app --reload --port 8000
 ```
 
-3. Start the web app (separate terminal):
+### Frontend
 
 ```bash
 cd apps/web
@@ -42,26 +54,41 @@ yarn install
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000). The home page reports API health from `GET /health`.
+Open http://localhost:3000
 
-## Docker
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-## Implementation status
+## Usage
 
-| Phase | Status |
-|-------|--------|
-| 0 — Monorepo scaffold | Complete |
-| 1 — Backend foundation | Complete |
-| 2 — Document ingestion | Planned |
-| 3 — Retrieval | Planned |
-| 4 — Tribunal pipeline | Planned |
-| 5 — Frontend pages | Planned |
-| 6 — Evaluation | Planned |
-| 7 — Testing (≥90% coverage) | Planned |
-| 8 — Docs and Docker polish | Planned |
+1. Upload seed documents from `data/seed/` via the Corpus page
+2. Ask a question on the Tribunal page
+3. Review Witness Answer, Prosecutor Objections, Claim Docket, and Final Ruling
+4. Run evaluations from the Evaluation Dashboard
 
-See `the_hallucination_tribunal_requirements.md` for full specifications.
+## Tests
+
+```bash
+# Backend
+cd apps/api && uv run pytest --cov=hallucination_tribunal --cov-report=term-missing
+
+# Frontend
+cd apps/web && yarn test:coverage
+
+# End-to-end (Playwright; starts Next.js dev server automatically)
+cd apps/web && yarn playwright install chromium && yarn test:e2e
+```
+
+## Known Limitations
+
+- Verdict quality depends on LLM adherence to structured prompts
+- Complex PDF layouts may lose structure
+- Reranking not included in MVP
+- Evaluation metrics are heuristic
+
+## License
+
+MIT

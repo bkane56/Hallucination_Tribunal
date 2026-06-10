@@ -1,0 +1,72 @@
+[
+  {
+    "id": "eval-01",
+    "question": "Are external LLM APIs allowed?",
+    "expected_source_document": "ai_usage_policy",
+    "expected_key_facts": ["approval required", "AI Governance Committee"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-02",
+    "question": "Can confidential data be pasted into a public chatbot?",
+    "expected_source_document": "data_privacy",
+    "expected_key_facts": ["confidential", "prohibited"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-03",
+    "question": "What approvals are needed before using AI with customer data?",
+    "expected_source_document": "ai_usage_policy",
+    "expected_key_facts": ["approval", "data classification"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-04",
+    "question": "What is the incident reporting timeline?",
+    "expected_source_document": "incident_response",
+    "expected_key_facts": ["4 hours"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-05",
+    "question": "Does the policy allow PHI to be processed by hosted AI models?",
+    "expected_source_document": "data_privacy",
+    "expected_key_facts": ["PHI", "prohibited"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-06",
+    "question": "What testing coverage is required before production release?",
+    "expected_source_document": "software_engineering",
+    "expected_key_facts": ["90%"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-07",
+    "question": "Who approves model risk exceptions?",
+    "expected_source_document": "ai_usage_policy",
+    "expected_key_facts": ["Chief AI Officer"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-08",
+    "question": "What logging is required for AI-generated decisions?",
+    "expected_source_document": "ai_usage_policy",
+    "expected_key_facts": ["logged", "timestamp"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-09",
+    "question": "Does the document mention SOC 2?",
+    "expected_source_document": "data_privacy",
+    "expected_key_facts": ["SOC 2"],
+    "expected_verdict_behavior": "grounded"
+  },
+  {
+    "id": "eval-10",
+    "question": "What does the policy say about dragon feeding after midnight?",
+    "expected_source_document": "dragon_sanctuary",
+    "expected_key_facts": ["midnight", "prohibited"],
+    "expected_verdict_behavior": "refuse"
+  }
+]

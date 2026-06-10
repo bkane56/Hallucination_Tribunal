@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 :root {
   --deep-ink: #111827;
@@ -8,41 +10,13 @@
   --verdict-teal: #0f766e;
   --objection-amber: #f59e0b;
   --overruled-red: #b91c1c;
+  --dark-red: #7f1d1d;
   --charcoal: #1f2937;
   --slate-gray: #6b7280;
   --aged-paper-line: #d6d3c8;
-
-  --background: var(--warm-parchment);
-  --foreground: var(--charcoal);
-  --card: var(--soft-ivory);
-  --primary: var(--gavel-gold);
-  --muted: var(--slate-gray);
-  --border: var(--aged-paper-line);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-primary: var(--primary);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
-  --color-deep-ink: var(--deep-ink);
-  --color-warm-parchment: var(--warm-parchment);
-  --color-soft-ivory: var(--soft-ivory);
-  --color-gavel-gold: var(--gavel-gold);
-  --color-verdict-teal: var(--verdict-teal);
-  --color-objection-amber: var(--objection-amber);
-  --color-overruled-red: var(--overruled-red);
-  --color-charcoal: var(--charcoal);
-  --color-slate-gray: var(--slate-gray);
-  --color-aged-paper-line: var(--aged-paper-line);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background-color: var(--warm-parchment);
+  color: var(--charcoal);
 }

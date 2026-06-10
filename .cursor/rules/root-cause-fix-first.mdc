@@ -1,0 +1,42 @@
+---
+description: Always apply when fixing bugs, failing tests, runtime errors, TypeScript errors, lint errors, broken UI behavior, broken API behavior, or unexpected application behavior.
+globs:
+alwaysApply: true
+---
+
+# Root Cause Fix First
+
+When there is a code issue, bug, failing test, runtime error, lint error, TypeScript error, broken UI behavior, broken API behavior, or unexpected behavior, fix the underlying cause.
+
+Do not add one-off hacks, bypasses, broad fallbacks, duplicate logic, unnecessary wrapper code, artificial delays, hardcoded special cases, or defensive code that only hides the symptom.
+
+Before changing code:
+
+1. Identify the failing behavior.
+2. Locate the smallest responsible code path.
+3. Explain the root cause briefly.
+4. Fix the existing implementation at the correct layer.
+5. Remove obsolete or redundant code created by the fix.
+6. Preserve existing architecture and naming conventions.
+7. Add or update tests when the bug involves logic, state, API behavior, validation, or UI behavior.
+8. Run the relevant tests, type checks, lint checks, or build commands when available.
+
+A valid fix should make the code simpler, more correct, or more consistent with the existing architecture.
+
+An invalid fix is anything that:
+- Masks the error without correcting the cause.
+- Adds duplicate logic instead of reusing the existing path.
+- Introduces a second source of truth.
+- Hardcodes a value only to satisfy the current example.
+- Silences an error without proving it is safe.
+- Adds broad try/catch behavior without handling the actual failure mode.
+- Changes public behavior unnecessarily.
+- Bloats the codebase to avoid understanding the issue.
+
+When uncertain, stop and explain the uncertainty instead of guessing or patching around the problem.
+
+Before finalizing, include a short "Root cause fixed" note that states:
+- The actual cause.
+- The files changed.
+- Why the fix solves the underlying problem.
+- What validation was run.

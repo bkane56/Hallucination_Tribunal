@@ -1,75 +1,62 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { fetchHealth } from "@/lib/api/health";
-
-export default async function Home() {
-  let apiStatus = "unavailable";
-
-  try {
-    const health = await fetchHealth();
-    apiStatus = `${health.status} (v${health.version})`;
-  } catch {
-    apiStatus = "unavailable — start the API with uv run uvicorn";
-  }
-
+export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <section className="rounded-xl border border-aged-paper-line bg-soft-ivory p-10 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-widest text-verdict-teal">
-          Portfolio RAG Application
-        </p>
-        <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-charcoal">
-          Every AI answer gets its day in court.
+    <div className="space-y-8">
+      <section className="rounded-lg border border-paper-line bg-ivory p-8 shadow-sm">
+        <h1 className="text-3xl font-bold text-charcoal">
+          The Hallucination Tribunal
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-gray">
-          The Hallucination Tribunal retrieves evidence from your document
-          corpus, generates a grounded Witness Answer, then subjects each claim
-          to Prosecutor objections and a Judge&apos;s Verdict before issuing a
-          Final Ruling.
+        <p className="mt-4 max-w-3xl text-lg text-slate-gray">
+          A RAG-powered courtroom for AI answers. The Witness generates grounded
+          responses, the Prosecutor challenges claims, and the Judge delivers a
+          transparent verdict with citations.
         </p>
-
-        <div className="mt-8 flex flex-wrap gap-4">
-          <Link href="/corpus">
-            <Button>Upload Evidence</Button>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/corpus"
+            className="rounded-md bg-gavel-gold px-4 py-2 text-sm font-medium text-deep-ink"
+          >
+            Upload Documents
           </Link>
-          <Link href="/tribunal">
-            <Button variant="secondary">Run Tribunal</Button>
+          <Link
+            href="/tribunal"
+            className="rounded-md border border-paper-line px-4 py-2 text-sm font-medium hover:bg-parchment"
+          >
+            Ask the Tribunal
           </Link>
-          <Link href="/architecture">
-            <Button variant="ghost">View Architecture</Button>
+          <Link
+            href="/evaluation"
+            className="rounded-md border border-paper-line px-4 py-2 text-sm font-medium hover:bg-parchment"
+          >
+            Evaluation Dashboard
           </Link>
         </div>
       </section>
 
-      <section className="mt-10 grid gap-6 md:grid-cols-3">
-        {[
-          {
-            title: "Witness",
-            body: "Generates answers strictly from retrieved Evidence Locker chunks with citations.",
-          },
-          {
-            title: "Prosecutor",
-            body: "Extracts claims and files objections when evidence is missing or contradicted.",
-          },
-          {
-            title: "Judge",
-            body: "Assigns per-claim verdicts and produces a reliability-scored Final Ruling.",
-          },
-        ].map((role) => (
-          <article
-            key={role.title}
-            className="rounded-lg border border-aged-paper-line bg-soft-ivory p-6"
-          >
-            <h2 className="text-lg font-semibold text-charcoal">{role.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-gray">{role.body}</p>
-          </article>
-        ))}
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-paper-line bg-ivory p-4">
+          <h2 className="font-semibold">Why it matters</h2>
+          <p className="mt-2 text-sm text-slate-gray">
+            Enterprise teams need answers they can trust. Claim-level verification
+            catches hallucinations before they reach users.
+          </p>
+        </div>
+        <div className="rounded-lg border border-paper-line bg-ivory p-4">
+          <h2 className="font-semibold">Architecture</h2>
+          <p className="mt-2 text-sm text-slate-gray">
+            Hybrid retrieval, structured agent pipeline, local-first privacy with
+            optional hosted LLM providers.
+          </p>
+        </div>
+        <div className="rounded-lg border border-paper-line bg-ivory p-4">
+          <h2 className="font-semibold">Courtroom metaphor</h2>
+          <p className="mt-2 text-sm text-slate-gray">
+            Witness, Prosecutor, and Judge roles make AI verification explainable
+            to hiring managers and compliance teams.
+          </p>
+        </div>
       </section>
-
-      <p className="mt-10 text-sm text-slate-gray">
-        API status: <span className="font-medium text-charcoal">{apiStatus}</span>
-      </p>
     </div>
   );
 }

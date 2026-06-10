@@ -1,24 +1,32 @@
 # Hallucination Tribunal API
 
-FastAPI backend for document ingestion, retrieval, and the Witness → Prosecutor → Judge tribunal pipeline.
+FastAPI backend for document ingestion, hybrid retrieval, and the tribunal pipeline.
 
-## Phase 1 — Backend foundation
-
-- Pydantic models for documents, retrieval, and tribunal results
-- Structured logging and global error handling
-- Provider protocols for LLM, embeddings, and vector storage
-- Data directory bootstrap on startup
-- `GET /health` and `GET /health/ready`
-
-## Development
+## Run locally
 
 ```bash
+cd apps/api
 uv sync --extra dev
-uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn hallucination_tribunal.main:app --reload --port 8000
+```
+
+Compatibility alias (same app):
+
+```bash
+uv run uvicorn src.main:app --reload --port 8000
 ```
 
 ## Tests
 
 ```bash
-uv run pytest
+uv run pytest --cov=hallucination_tribunal --cov-report=term-missing
 ```
+
+## Optional extras
+
+```bash
+uv sync --extra openai --extra local-embeddings
+```
+
+- `openai` — hosted LLM and embedding providers
+- `local-embeddings` — sentence-transformers (falls back to hash embeddings when unavailable)

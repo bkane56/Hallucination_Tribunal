@@ -1,0 +1,87 @@
+"""Application configuration from environment variables."""
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _env_files() -> tuple[str, ...]:
+    """Load .env from monorepo root first, then cwd."""
+    api_root = Path(__file__).resolve().parents[3]
+    monorepo_root = Path(__file__).resolve().parents[5]
+    if (monorepo_root / "data").exists():
+        return (str(monorepo_root / ".env"), str(api_root / ".env"), ".env")
+    return (str(api_root / ".env"), ".env")
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=_env_files(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app_env: str = "development"
+    frontend_url: str = "http://localhost:3000"
+    backend_url: str = "http://localhost:8000"
+
+    llm_provider: Literal["ollama", "openai"] = "ollama"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1:8b"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
+    embedding_provider: Literal["local", "openai"] = "local"
+    local_embedding_model: str = "all-MiniLM-L6-v2"
+    openai_embedding_model: str = "text-embedding-3-small"
+
+    vector_db_provider: Literal["chromadb"] = "chromadb"
+    chroma_persist_directory: str = "./data/chroma"
+    sqlite_database_path: str = "./data/tribunal.db"
+
+    max_upload_size_mb: int = 25
+    chunk_size: int = 900
+    chunk_overlap: int = 150
+    top_k_default: int = 6
+    retrieval_mode: Literal["vector", "hybrid"] = "hybrid"
+
+    log_level: str = "info"
+    upload_directory: str = Field(default="./data/uploads")
+    seed_directory: str = Field(default="./data/seed")
+    evals_directory: str = Field(default="./data/evals")
+
+    @property
+    def max_upload_bytes(self) -> int:
+        return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def project_root(self) -> Path:
+        candidate = Path(__file__).resolve().parents[5]
+        if (candidate / "data").exists():
+            return candidate
+        return Path(__file__).resolve().parents[3]
+
+    def resolve_path(self, path: str) -> Path:
+        p = Path(path)
+        if p.is_absolute():
+            return p
+        return self.project_root / path
+
+    def ensure_data_directories(self) -> list[Path]:
+        paths = [
+            self.resolve_path(self.chroma_persist_directory),
+            self.resolve_path(self.upload_directory),
+            self.resolve_path(self.seed_directory),
+            self.resolve_path(self.evals_directory),
+        ]
+        for path in paths:
+            path.mkdir(parents=True, exist_ok=True)
+        return paths
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
