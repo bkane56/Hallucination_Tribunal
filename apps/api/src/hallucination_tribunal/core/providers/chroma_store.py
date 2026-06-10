@@ -1,4 +1,4 @@
-"""ChromaDB vector store implementation."""
+"""ChromaDB vector store for local/Docker deployments."""
 
 from typing import Any
 
@@ -6,6 +6,7 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from hallucination_tribunal.core.config import get_settings
+from hallucination_tribunal.core.providers.memory_vector_store import InMemoryVectorStore
 from hallucination_tribunal.core.providers.vector_store import VectorStore
 from hallucination_tribunal.models.domain import Chunk
 
@@ -15,16 +16,11 @@ COLLECTION_NAME = "tribunal_chunks"
 class ChromaVectorStore(VectorStore):
     def __init__(self):
         settings = get_settings()
-        chroma_settings = ChromaSettings(anonymized_telemetry=False)
-        if settings.is_serverless:
-            # PersistentClient locks SQLite files on disk; serverless runtimes raise EBUSY.
-            self.client = chromadb.EphemeralClient(settings=chroma_settings)
-        else:
-            persist_dir = str(settings.resolve_path(settings.chroma_persist_directory))
-            self.client = chromadb.PersistentClient(
-                path=persist_dir,
-                settings=chroma_settings,
-            )
+        persist_dir = str(settings.resolve_path(settings.chroma_persist_directory))
+        self.client = chromadb.PersistentClient(
+            path=persist_dir,
+            settings=ChromaSettings(anonymized_telemetry=False),
+        )
         self.collection = self.client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
@@ -100,13 +96,17 @@ class ChromaVectorStore(VectorStore):
         )
 
 
-_vector_store: ChromaVectorStore | None = None
+_vector_store: VectorStore | None = None
 
 
-def get_vector_store() -> ChromaVectorStore:
+def get_vector_store() -> VectorStore:
     global _vector_store
     if _vector_store is None:
-        _vector_store = ChromaVectorStore()
+        settings = get_settings()
+        if settings.is_serverless:
+            _vector_store = InMemoryVectorStore()
+        else:
+            _vector_store = ChromaVectorStore()
     return _vector_store
 
 

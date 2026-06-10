@@ -1,5 +1,6 @@
 """SQLite database layer."""
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -65,17 +66,28 @@ CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
 
 
 class Database:
+    _init_lock = asyncio.Lock()
+
     def __init__(self, settings: Settings | None = None):
         self.settings = settings or get_settings()
         self.db_path = self.settings.resolve_path(self.settings.sqlite_database_path)
         self._initialized = False
 
+    @classmethod
+    async def _configure_connection(cls, conn: aiosqlite.Connection) -> None:
+        await conn.execute("PRAGMA journal_mode=WAL")
+        await conn.execute("PRAGMA busy_timeout=30000")
+
     async def initialize(self) -> None:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        async with aiosqlite.connect(self.db_path) as conn:
-            await conn.executescript(SCHEMA)
-            await conn.commit()
-        self._initialized = True
+        async with self._init_lock:
+            if self._initialized:
+                return
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            async with aiosqlite.connect(self.db_path, timeout=30) as conn:
+                await self._configure_connection(conn)
+                await conn.executescript(SCHEMA)
+                await conn.commit()
+            self._initialized = True
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[aiosqlite.Connection]:
@@ -83,8 +95,7 @@ class Database:
             await self.initialize()
         conn = await aiosqlite.connect(self.db_path, timeout=30)
         conn.row_factory = aiosqlite.Row
-        await conn.execute("PRAGMA journal_mode=WAL")
-        await conn.execute("PRAGMA busy_timeout=30000")
+        await self._configure_connection(conn)
         try:
             yield conn
             await conn.commit()

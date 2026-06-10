@@ -68,7 +68,11 @@ class Settings(BaseSettings):
 
     @property
     def is_serverless(self) -> bool:
-        return bool(os.getenv("VERCEL"))
+        return bool(
+            os.getenv("VERCEL")
+            or os.getenv("VERCEL_ENV")
+            or os.getenv("VERCEL_REGION")
+        )
 
     @property
     def max_upload_bytes(self) -> int:

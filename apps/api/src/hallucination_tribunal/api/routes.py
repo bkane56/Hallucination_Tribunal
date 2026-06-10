@@ -45,6 +45,7 @@ async def readiness_check():
             "llm": settings.llm_provider,
             "embedding": settings.embedding_provider,
             "vector_db": settings.vector_db_provider,
+            "serverless": settings.is_serverless,
         },
         "directories_ready": all(path.exists() for path in directories),
     }

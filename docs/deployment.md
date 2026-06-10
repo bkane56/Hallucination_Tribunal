@@ -162,7 +162,7 @@ See [`docker-compose.prod.yml`](../docker-compose.prod.yml).
 | Ollama model not found | Pull model on Ollama host; verify `OLLAMA_MODEL` matches `ollama list` |
 | Build exceeds size limit | Use `EMBEDDING_PROVIDER=ollama`; do not install `[local-embeddings]` |
 | Upload fails with OpenAI error | Set `EMBEDDING_PROVIDER=ollama` so document chunks stay on your Ollama host |
-| Tribunal fails with `[Errno 16] Device or resource busy` | Fixed in API: serverless uses in-memory Chroma and re-hydrates vectors from SQLite before retrieval |
+| Tribunal fails with `[Errno 16] Device or resource busy` | Fixed in API: serverless uses an in-memory vector index (no Chroma file locks) and re-hydrates from SQLite before retrieval |
 | CORS errors | Same-origin `/server` routes should not need CORS; check `FRONTEND_URL` if using split deploy |
 | Uploads vanish | Expected on serverless `/tmp` — use Docker locally for persistent data |
 
