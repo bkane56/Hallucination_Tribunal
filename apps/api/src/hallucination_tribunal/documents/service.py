@@ -1,5 +1,6 @@
 """Document ingestion and management service."""
 
+import asyncio
 import hashlib
 import shutil
 from pathlib import Path
@@ -142,7 +143,9 @@ class DocumentService:
         )
 
     async def _index_document(self, doc: Document, file_path: Path) -> None:
-        segments = TextExtractor.extract(file_path, doc.file_type)
+        segments = await asyncio.to_thread(
+            TextExtractor.extract, file_path, doc.file_type
+        )
         if not segments:
             raise ValueError("Document contains no extractable text")
 
@@ -153,7 +156,12 @@ class DocumentService:
         embedder = get_embedding_provider()
         vector_store = get_vector_store()
         texts = [c.text for c in chunks]
-        embeddings = embedder.embed_texts(texts)
+        logger.info(
+            "document_embedding_started",
+            document_id=doc.document_id,
+            chunk_count=len(chunks),
+        )
+        embeddings = await asyncio.to_thread(embedder.embed_texts, texts)
 
         metadatas = []
         for chunk in chunks:

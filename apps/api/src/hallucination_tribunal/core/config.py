@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     max_upload_size_mb: int = 25
     chunk_size: int = 900
     chunk_overlap: int = 150
+    embedding_batch_size: int = 16
+    ollama_embedding_timeout: float = 90.0
     top_k_default: int = 6
     retrieval_mode: Literal["vector", "hybrid"] = "hybrid"
 

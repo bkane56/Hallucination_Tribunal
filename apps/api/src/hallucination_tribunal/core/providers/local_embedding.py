@@ -3,7 +3,7 @@
 from functools import lru_cache
 
 from hallucination_tribunal.core.config import get_settings
-from hallucination_tribunal.core.providers.embedding import EmbeddingProvider
+from hallucination_tribunal.core.providers.embedding import EmbeddingProvider, iter_text_batches
 
 
 class LocalEmbeddingProvider(EmbeddingProvider):
@@ -55,8 +55,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
         settings = get_settings()
         client = OpenAI(api_key=settings.openai_api_key)
-        response = client.embeddings.create(input=texts, model=self.model)
-        return [item.embedding for item in response.data]
+        embeddings: list[list[float]] = []
+        for batch in iter_text_batches(texts, settings.embedding_batch_size):
+            response = client.embeddings.create(input=batch, model=self.model)
+            embeddings.extend(item.embedding for item in response.data)
+        return embeddings
 
     def embed_query(self, query: str) -> list[float]:
         return self.embed_texts([query])[0]
