@@ -1,5 +1,7 @@
 """Retrieval service with vector and hybrid search."""
 
+import asyncio
+
 from rank_bm25 import BM25Okapi
 
 from hallucination_tribunal.core.config import get_settings
@@ -57,7 +59,7 @@ class RetrievalService:
 
         docs = {d.document_id: d for d in await self.db.list_documents()}
         texts = [c.text for c in chunks]
-        embeddings = self.embedder.embed_texts(texts)
+        embeddings = await asyncio.to_thread(self.embedder.embed_texts, texts)
         metadatas = [
             {
                 "document_id": chunk.document_id,
@@ -79,7 +81,7 @@ class RetrievalService:
         top_k: int,
         document_ids: list[str] | None,
     ) -> list[RetrievedSource]:
-        query_embedding = self.embedder.embed_query(question)
+        query_embedding = await asyncio.to_thread(self.embedder.embed_query, question)
         results = self.vector_store.query(
             query_embedding, top_k=top_k, document_ids=document_ids
         )
@@ -146,12 +148,16 @@ class RetrievalService:
     async def _build_sources(
         self, results: list[tuple[str, float, dict]]
     ) -> list[RetrievedSource]:
-        sources: list[RetrievedSource] = []
+        if not results:
+            return []
+
+        chunk_ids = [chunk_id for chunk_id, _, _ in results]
+        chunks = await self.db.get_chunks_by_ids(chunk_ids)
+        chunk_map = {chunk.chunk_id: chunk for chunk in chunks}
         docs = {d.document_id: d for d in await self.db.list_documents()}
 
+        sources: list[RetrievedSource] = []
         for chunk_id, score, metadata in results:
-            chunks = await self.db.get_all_chunks()
-            chunk_map = {c.chunk_id: c for c in chunks}
             chunk = chunk_map.get(chunk_id)
             if not chunk:
                 continue

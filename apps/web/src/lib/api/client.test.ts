@@ -132,6 +132,21 @@ describe("api client", () => {
     await expect(api.listDocuments()).rejects.toThrow("Request failed");
   });
 
+  it("loads corpus overview", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        documents: [],
+        samples: [{ sample_id: "nist-ai-rmf", title: "NIST AI RMF" }],
+        categories: ["NIST & Federal Standards"],
+      }),
+    } as Response);
+
+    const result = await api.loadCorpusOverview();
+    expect(result.samples).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledWith(`${BACKEND_URL}/corpus/overview`, undefined);
+  });
+
   it("lists sample governance documents", async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

@@ -2,46 +2,56 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
-import type { Document } from "@/lib/types";
+import type { Document, SampleDocument } from "@/lib/types";
 import { SampleGovernancePanel } from "./SampleGovernancePanel";
 import { UploadPanel } from "./UploadPanel";
 
 export function CorpusManager() {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [samples, setSamples] = useState<SampleDocument[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadDocuments = useCallback(async () => {
+  const loadCorpus = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.listDocuments();
+      const data = await api.loadCorpusOverview();
       setDocuments(data.documents);
+      setSamples(data.samples);
+      setCategories(data.categories);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load documents");
+      setError(err instanceof Error ? err.message : "Failed to load corpus");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+    loadCorpus();
+  }, [loadCorpus]);
 
   async function handleDelete(id: string) {
     await api.deleteDocument(id);
-    await loadDocuments();
+    await loadCorpus();
   }
 
   async function handleRebuild() {
     await api.rebuildIndex();
-    await loadDocuments();
+    await loadCorpus();
   }
 
   return (
     <div className="space-y-6">
-      <SampleGovernancePanel onImported={loadDocuments} />
-      <UploadPanel onUploaded={loadDocuments} />
+      <SampleGovernancePanel
+        samples={samples}
+        categories={categories}
+        loading={loading}
+        error={error}
+        onImported={loadCorpus}
+      />
+      <UploadPanel onUploaded={loadCorpus} />
       <div className="rounded-lg border border-paper-line bg-ivory p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Document Corpus</h2>
@@ -53,7 +63,12 @@ export function CorpusManager() {
             Rebuild Index
           </button>
         </div>
-        {loading && <p className="text-sm text-slate-gray">Loading...</p>}
+        {loading && (
+          <p className="text-sm text-slate-gray">
+            Loading corpus… First request after deploy may take up to a minute while the
+            server starts.
+          </p>
+        )}
         {error && (
           <p className="text-sm text-overruled-red" role="alert">
             {error}

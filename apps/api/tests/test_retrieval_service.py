@@ -17,7 +17,7 @@ async def test_vector_retrieve(mock_db, mock_vector, mock_embed):
     ]
 
     db = MagicMock()
-    db.get_all_chunks = AsyncMock(
+    db.get_chunks_by_ids = AsyncMock(
         return_value=[
             Chunk(
                 chunk_id="chunk-1",
@@ -38,3 +38,4 @@ async def test_vector_retrieve(mock_db, mock_vector, mock_embed):
 
     assert len(sources) == 1
     assert sources[0].filename == "policy.md"
+    db.get_chunks_by_ids.assert_awaited_once_with(["chunk-1"])

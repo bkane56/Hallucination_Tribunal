@@ -45,6 +45,12 @@ export function TribunalPanel() {
         >
           {loading ? "Running Tribunal..." : "Run Tribunal"}
         </button>
+        {loading && (
+          <p className="mt-3 text-sm text-slate-gray">
+            The tribunal runs five review stages on Ollama. This can take 1–3 minutes on
+            first use after the server wakes up.
+          </p>
+        )}
         {error && (
           <p className="mt-3 text-sm text-overruled-red" role="alert">
             {error}

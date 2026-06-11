@@ -60,6 +60,12 @@ class SampleDocumentListResponse(BaseModel):
     categories: list[str]
 
 
+class CorpusOverviewResponse(BaseModel):
+    documents: list[DocumentResponse]
+    samples: list[SampleDocumentResponse]
+    categories: list[str]
+
+
 class SampleDocumentImportRequest(BaseModel):
     sample_ids: list[str] = Field(min_length=1)
 

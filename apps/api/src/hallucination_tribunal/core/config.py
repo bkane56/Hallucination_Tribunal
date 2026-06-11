@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
     embedding_batch_size: int = 16
     ollama_embedding_timeout: float = 90.0
+    ollama_llm_timeout: float = 180.0
+    ollama_keep_alive: str = "10m"
     top_k_default: int = 6
     retrieval_mode: Literal["vector", "hybrid"] = "hybrid"
 

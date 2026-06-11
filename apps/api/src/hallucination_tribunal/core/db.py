@@ -245,6 +245,18 @@ class Database:
             rows = await cursor.fetchall()
         return [self._row_to_chunk(row) for row in rows]
 
+    async def get_chunks_by_ids(self, chunk_ids: list[str]) -> list[Chunk]:
+        if not chunk_ids:
+            return []
+        placeholders = ",".join("?" * len(chunk_ids))
+        async with self.session() as conn:
+            cursor = await conn.execute(
+                f"SELECT * FROM chunks WHERE chunk_id IN ({placeholders})",
+                chunk_ids,
+            )
+            rows = await cursor.fetchall()
+        return [self._row_to_chunk(row) for row in rows]
+
     async def get_all_chunks(
         self, document_ids: list[str] | None = None
     ) -> list[Chunk]:

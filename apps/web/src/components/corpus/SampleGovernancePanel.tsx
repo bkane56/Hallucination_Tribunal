@@ -1,43 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api/client";
 import type { SampleDocument } from "@/lib/types";
 
 interface SampleGovernancePanelProps {
+  samples: SampleDocument[];
+  categories: string[];
+  loading?: boolean;
+  error?: string | null;
   onImported?: () => void;
 }
 
-export function SampleGovernancePanel({ onImported }: SampleGovernancePanelProps) {
-  const [samples, setSamples] = useState<SampleDocument[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+export function SampleGovernancePanel({
+  samples,
+  categories,
+  loading = false,
+  error = null,
+  onImported,
+}: SampleGovernancePanelProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedSampleId, setSelectedSampleId] = useState<string>("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadSamples = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.listSampleDocuments();
-      setSamples(data.samples);
-      setCategories(data.categories);
-      const firstAvailable = data.samples.find((sample) => !sample.already_imported);
-      setSelectedSampleId(firstAvailable?.sample_id ?? data.samples[0]?.sample_id ?? "");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load sample documents");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    loadSamples();
-  }, [loadSamples]);
+    const firstAvailable = samples.find((sample) => !sample.already_imported);
+    setSelectedSampleId(firstAvailable?.sample_id ?? samples[0]?.sample_id ?? "");
+  }, [samples]);
 
   const filteredSamples = useMemo(() => {
     if (selectedCategory === "all") return samples;
@@ -75,7 +66,6 @@ export function SampleGovernancePanel({ onImported }: SampleGovernancePanelProps
   async function importSamples(sampleIds: string[]) {
     if (sampleIds.length === 0) return;
     setImporting(true);
-    setError(null);
     setStatus(null);
     try {
       const result = await api.importSampleDocuments(sampleIds);
@@ -88,10 +78,9 @@ export function SampleGovernancePanel({ onImported }: SampleGovernancePanelProps
       if (errorCount > 0) parts.push(`${errorCount} failed`);
       setStatus(parts.join(", ") || "No changes made");
       setSelectedIds(new Set());
-      await loadSamples();
       onImported?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Import failed");
+      setStatus(err instanceof Error ? err.message : "Import failed");
     } finally {
       setImporting(false);
     }

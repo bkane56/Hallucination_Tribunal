@@ -1,6 +1,7 @@
 """Ollama LLM provider."""
 
 import json
+from functools import lru_cache
 from typing import Any
 
 import httpx
@@ -14,6 +15,14 @@ class OllamaLLMProvider(LLMProvider):
         settings = get_settings()
         self.base_url = settings.ollama_base_url.rstrip("/")
         self.model = settings.ollama_model
+        self.timeout = settings.ollama_llm_timeout
+        self.keep_alive = settings.ollama_keep_alive
+        self._client: httpx.AsyncClient | None = None
+
+    def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=self.timeout)
+        return self._client
 
     async def generate(
         self,
@@ -29,25 +38,23 @@ class OllamaLLMProvider(LLMProvider):
                 {"role": "user", "content": user_prompt},
             ],
             "stream": False,
+            "keep_alive": self.keep_alive,
         }
         if json_mode:
             payload["format"] = "json"
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{self.base_url}/api/chat",
-                json=payload,
+        client = self._get_client()
+        response = await client.post(f"{self.base_url}/api/chat", json=payload)
+        if response.status_code == 404:
+            detail = response.text.strip() or "model not found"
+            raise RuntimeError(
+                f"Ollama model '{self.model}' is not available ({detail}). "
+                f"Run `ollama list` and set OLLAMA_MODEL to an installed model, "
+                f"or pull it with `ollama pull {self.model}`."
             )
-            if response.status_code == 404:
-                detail = response.text.strip() or "model not found"
-                raise RuntimeError(
-                    f"Ollama model '{self.model}' is not available ({detail}). "
-                    f"Run `ollama list` and set OLLAMA_MODEL to an installed model, "
-                    f"or pull it with `ollama pull {self.model}`."
-                )
-            response.raise_for_status()
-            data = response.json()
-            return data["message"]["content"]
+        response.raise_for_status()
+        data = response.json()
+        return data["message"]["content"]
 
     async def generate_structured(
         self,
@@ -102,6 +109,7 @@ class OpenAILLMProvider(LLMProvider):
         return json.loads(raw)
 
 
+@lru_cache
 def get_llm_provider() -> LLMProvider:
     settings = get_settings()
     if settings.llm_provider == "openai":

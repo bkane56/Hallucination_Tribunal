@@ -38,6 +38,7 @@ async def test_serverless_hydrates_empty_vector_index(monkeypatch):
 
     mock_db = MagicMock()
     mock_db.get_all_chunks = AsyncMock(return_value=[chunk])
+    mock_db.get_chunks_by_ids = AsyncMock(return_value=[chunk])
     mock_db.list_documents = AsyncMock(return_value=[doc])
 
     with (

@@ -9,7 +9,9 @@ from hallucination_tribunal import __version__
 from hallucination_tribunal.core.config import get_settings
 from hallucination_tribunal.documents.service import DocumentService
 from hallucination_tribunal.evaluations.service import EvaluationService
+from hallucination_tribunal.models.domain import Document
 from hallucination_tribunal.models.schemas import (
+    CorpusOverviewResponse,
     DocumentListResponse,
     DocumentResponse,
     DocumentUploadResponse,
@@ -27,6 +29,44 @@ from hallucination_tribunal.models.schemas import (
 from hallucination_tribunal.tribunal.orchestrator import TribunalOrchestrator
 
 router = APIRouter()
+
+
+def _document_response(doc: Document) -> DocumentResponse:
+    return DocumentResponse(
+        document_id=doc.document_id,
+        filename=doc.filename,
+        file_type=doc.file_type,
+        chunk_count=doc.chunk_count,
+        status=doc.status,
+        error_message=doc.error_message,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
+
+
+def _sample_document_responses(
+    service: DocumentService,
+    existing_filenames: set[str],
+) -> tuple[list[SampleDocumentResponse], list[str]]:
+    samples: list[SampleDocumentResponse] = []
+    categories: list[str] = []
+    for sample in service.list_sample_documents():
+        if sample.category not in categories:
+            categories.append(sample.category)
+        samples.append(
+            SampleDocumentResponse(
+                sample_id=sample.sample_id,
+                title=sample.title,
+                category=sample.category,
+                source=sample.source,
+                url=sample.url,
+                description=sample.description,
+                good_for=sample.good_for,
+                filename=sample.filename,
+                already_imported=sample.filename in existing_filenames,
+            )
+        )
+    return samples, categories
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -87,28 +127,24 @@ async def upload_document(file: UploadFile = File(...)):
     )
 
 
+@router.get("/corpus/overview", response_model=CorpusOverviewResponse)
+async def corpus_overview():
+    service = DocumentService()
+    docs = await service.list_documents()
+    existing_filenames = {doc.filename for doc in docs}
+    samples, categories = _sample_document_responses(service, existing_filenames)
+    return CorpusOverviewResponse(
+        documents=[_document_response(doc) for doc in docs],
+        samples=samples,
+        categories=categories,
+    )
+
+
 @router.get("/documents/samples", response_model=SampleDocumentListResponse)
 async def list_sample_documents():
     service = DocumentService()
     existing_filenames = {doc.filename for doc in await service.list_documents()}
-    samples = []
-    categories: list[str] = []
-    for sample in service.list_sample_documents():
-        if sample.category not in categories:
-            categories.append(sample.category)
-        samples.append(
-            SampleDocumentResponse(
-                sample_id=sample.sample_id,
-                title=sample.title,
-                category=sample.category,
-                source=sample.source,
-                url=sample.url,
-                description=sample.description,
-                good_for=sample.good_for,
-                filename=sample.filename,
-                already_imported=sample.filename in existing_filenames,
-            )
-        )
+    samples, categories = _sample_document_responses(service, existing_filenames)
     return SampleDocumentListResponse(samples=samples, categories=categories)
 
 
@@ -158,21 +194,7 @@ async def import_sample_documents(request: SampleDocumentImportRequest):
 async def list_documents():
     service = DocumentService()
     docs = await service.list_documents()
-    return DocumentListResponse(
-        documents=[
-            DocumentResponse(
-                document_id=d.document_id,
-                filename=d.filename,
-                file_type=d.file_type,
-                chunk_count=d.chunk_count,
-                status=d.status,
-                error_message=d.error_message,
-                created_at=d.created_at,
-                updated_at=d.updated_at,
-            )
-            for d in docs
-        ]
-    )
+    return DocumentListResponse(documents=[_document_response(doc) for doc in docs])
 
 
 @router.get("/documents/{document_id}", response_model=DocumentResponse)

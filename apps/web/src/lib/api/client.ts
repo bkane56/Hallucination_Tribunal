@@ -37,6 +37,13 @@ export const api = {
   listDocuments: () =>
     request<{ documents: Document[] }>("/documents"),
 
+  loadCorpusOverview: () =>
+    request<{
+      documents: Document[];
+      samples: SampleDocument[];
+      categories: string[];
+    }>("/corpus/overview"),
+
   uploadDocument: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);

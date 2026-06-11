@@ -35,6 +35,17 @@ async def test_list_documents_empty(client):
 
 
 @pytest.mark.asyncio
+async def test_corpus_overview(client):
+    response = await client.get("/corpus/overview")
+    assert response.status_code == 200
+    data = response.json()
+    assert "documents" in data
+    assert "samples" in data
+    assert "categories" in data
+    assert len(data["samples"]) > 0
+
+
+@pytest.mark.asyncio
 async def test_upload_invalid_type(client):
     files = {"file": ("bad.exe", b"binary", "application/octet-stream")}
     response = await client.post("/documents/upload", files=files)
