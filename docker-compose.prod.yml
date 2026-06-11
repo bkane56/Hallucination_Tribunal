@@ -1,5 +1,6 @@
-# Production stack for Railway, Render, Fly.io, or any Docker host.
-# The Next.js UI should be deployed separately on Vercel.
+# Local / self-hosted Docker stack (API + Ollama). Not used for production UI.
+# Production: API on Render (see render.yaml), Ollama on private service consultationAI,
+# Next.js UI on Vercel with NEXT_PUBLIC_BACKEND_URL pointing at the Render API.
 
 services:
   ollama:

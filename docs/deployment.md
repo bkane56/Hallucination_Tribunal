@@ -1,149 +1,109 @@
-# Deployment Guide (Vercel)
+# Deployment Guide
 
-Deploy the **Next.js UI and FastAPI API together on Vercel** using [Vercel Services](https://vercel.com/docs/services). Point the API at your existing Ollama endpoint via `OLLAMA_BASE_URL`.
+Production uses a **split deploy**: FastAPI on **Render**, Next.js UI on **Vercel**, Ollama on the private Render service **consultationAI**.
 
-| Service | Route | Runtime |
+| Service | Host | URL |
 |---|---|---|
-| Web UI | `/` | Next.js |
-| API | `/server/*` | Python / FastAPI |
+| Web UI | Vercel | `https://your-app.vercel.app` |
+| API | Render (Docker) | `https://your-api.onrender.com` |
+| LLM + embeddings | Render private service | `http://consultationAI:11434` (internal only) |
 
 ```text
-Browser → your-app.vercel.app
-            ├── /              Next.js UI
-            └── /server/*      FastAPI (documents, tribunal, evaluations)
-                      │
-                      └── HTTP → OLLAMA_BASE_URL (your Ollama host)
+Browser → your-app.vercel.app (Next.js)
+              │
+              └── HTTPS → your-api.onrender.com (FastAPI)
+                            │
+                            └── HTTP → consultationAI:11434 (Ollama)
 ```
-
-> **Note:** Vercel runs the API as serverless functions, not as a Docker container. Ollama itself must be reachable at a **public URL** you configure in `OLLAMA_BASE_URL` — that can be a tunnel to your local machine, a VPS, or any host running Ollama. Vercel functions call it over HTTP; they do not run the Ollama binary.
 
 ---
 
 ## Prerequisites
 
-- GitHub repo connected to Vercel
-- [Vercel CLI](https://vercel.com/docs/cli): `npm i -g vercel`
-- **Services** enabled on your Vercel team (required for multi-service projects)
-- A reachable Ollama URL with `llama3.1:8b` (or your chosen model) available
-- OpenAI API key (recommended on Vercel for embeddings — avoids bundling torch/sentence-transformers)
+- GitHub repo connected to Render and Vercel
+- Private Ollama service `consultationAI` in the **same Render region** as the API
+- Models on Ollama: `llama3.2:1b` (chat), `nomic-embed-text` (embeddings)
+- [Vercel CLI](https://vercel.com/docs/cli) for UI deploys (optional)
 
 ---
 
-## Step 1 — Create the Vercel project
+## Step 1 — Deploy API on Render
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import `Hallucination_Tribunal`.
-2. Set **Root Directory** to the **repository root** (not `apps/web`).
-3. Set **Framework Preset** to **Services** (required when `experimentalServices` is in `vercel.json`).
-4. Deploy once to confirm the project links correctly.
+### Option A: Blueprint (`render.yaml`)
 
-The repo root [`vercel.json`](../vercel.json) defines both services:
+1. In Render → **New** → **Blueprint** → connect `Hallucination_Tribunal`.
+2. Set `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` to your Vercel URL when prompted.
+3. Confirm disk mount at `/app/data` (1 GB).
 
-```json
-{
-  "experimentalServices": {
-    "web": { "entrypoint": "apps/web", "routePrefix": "/" },
-    "api": { "entrypoint": "apps/api/src/hallucination_tribunal/main.py", "routePrefix": "/server" }
-  }
-}
+### Option B: Manual Web Service
+
+| Setting | Value |
+|---|---|
+| **Root Directory** | `apps/api` |
+| **Dockerfile Path** | `Dockerfile` |
+| **Health check** | `/health` |
+| **Disk mount** | `/app/data` (1 GB+) |
+| **Region** | Same as `consultationAI` |
+
+Copy environment variables from [`.env.render.example`](../.env.render.example).
+
+**Important:** `OLLAMA_BASE_URL=http://consultationAI:11434` only works from Render services on the private network—not from Vercel or your laptop.
+
+### Smoke test
+
+```bash
+curl https://your-api.onrender.com/health
+curl https://your-api.onrender.com/health/ready
 ```
 
----
-
-## Step 2 — Environment variables
-
-In **Vercel → Project → Settings → Environment Variables**, add:
-
-### Web (Next.js)
-
-| Variable | Value |
-|---|---|
-| `NEXT_PUBLIC_API_ROUTE_PREFIX` | `/server` |
-
-Do **not** set `NEXT_PUBLIC_BACKEND_URL` unless you want a separate API host. Leaving it unset makes the UI call same-origin `/server/*` routes.
-
-### API + shared
-
-| Variable | Value |
-|---|---|
-| `APP_ENV` | `production` |
-| `API_ROOT_PATH` | `/server` |
-| `FRONTEND_URL` | `https://your-app.vercel.app` |
-| `LLM_PROVIDER` | `ollama` |
-| `OLLAMA_BASE_URL` | Your Ollama URL, e.g. `https://ollama.example.com` |
-| `OLLAMA_MODEL` | `llama3.1:8b` |
-| `EMBEDDING_PROVIDER` | `ollama` |
-| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` |
-
-Copy the full template from [`.env.vercel.example`](../.env.vercel.example).
-
-Data paths (`/tmp/hallucination-tribunal/*`) are configured automatically when `VERCEL` is detected. Uploads and the vector index are **ephemeral** on serverless — fine for demos; use Docker locally or add external storage for durable production data.
+`/health/ready` reports `ollama_reachable` when the API can reach `consultationAI`.
 
 ---
 
-## Step 3 — Deploy
+## Step 2 — Deploy UI on Vercel
+
+1. Import the repo at [vercel.com/new](https://vercel.com/new).
+2. **Root Directory** = repository root.
+3. Add environment variable:
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_BACKEND_URL` | `https://your-api.onrender.com` (no trailing slash) |
+
+Copy from [`.env.vercel.example`](../.env.vercel.example).
+
+**Do not set** `NEXT_PUBLIC_API_ROUTE_PREFIX`, `API_ROOT_PATH`, or `OLLAMA_*` on Vercel.
 
 ```bash
 vercel login
-vercel link          # once, from repo root
+vercel link
 ./scripts/deploy.sh vercel
-```
-
-Preview deploys:
-
-```bash
-./scripts/deploy.sh vercel:preview
-```
-
-Local multi-service dev (web + API together):
-
-```bash
-./scripts/deploy.sh dev
-# equivalent: vercel dev -L
 ```
 
 ---
 
-## Step 4 — Smoke test
-
-```bash
-curl https://your-app.vercel.app/server/health
-```
-
-Then in the browser:
+## Step 3 — End-to-end test
 
 1. Open your Vercel URL
 2. **Corpus** → import sample documents
 3. **Tribunal** → ask a question
-4. Confirm the Witness → Prosecutor → Judge pipeline completes
+4. Confirm Witness → Prosecutor → Judge completes
 
 ---
 
-## Ollama connectivity
+## Local development
 
-Your Ollama host must accept requests from Vercel's serverless network:
+```bash
+cp .env.example .env
+# Backend
+cd apps/api && uv sync --extra dev && uv run uvicorn hallucination_tribunal.main:app --reload --port 8000
+# Frontend
+cd apps/web && yarn install && yarn dev
+```
 
-- Set `OLLAMA_ORIGINS` or reverse-proxy auth if needed
-- Use HTTPS for public endpoints
-- Ensure models are pulled: `ollama pull llama3.1:8b` and `ollama pull nomic-embed-text`
+Local Ollama: `OLLAMA_BASE_URL=http://localhost:11434`
 
-If Ollama runs on your laptop, expose it with [Tailscale Funnel](https://tailscale.com/kb/1242/tailscale-funnel) or [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) and set `OLLAMA_BASE_URL` to that URL.
-
----
-
-## Limits to know
-
-| Topic | Vercel behavior |
-|---|---|
-| Tribunal timeout | Up to 300s on Pro (`maxDuration` in `vercel.json`) |
-| Bundle size | Python function max ~500 MB — use `EMBEDDING_PROVIDER=ollama`, not local sentence-transformers |
-| Persistence | `/tmp` storage resets between cold starts — demo/portfolio use |
-| Ollama | External HTTP endpoint only — not run inside Vercel functions |
-
----
-
-## Optional: local Docker stack
-
-If you prefer running API + Ollama in Docker locally (not on Vercel):
+### Local Docker (API + Ollama)
 
 ```bash
 ./scripts/deploy.sh api
@@ -157,22 +117,32 @@ See [`docker-compose.prod.yml`](../docker-compose.prod.yml).
 
 | Symptom | Fix |
 |---|---|
-| 404 on `/server/health` | Confirm Framework Preset is **Services** and root `vercel.json` is deployed |
-| UI calls `localhost:8000` in prod | Set `NEXT_PUBLIC_API_ROUTE_PREFIX=/server`, redeploy web |
-| Ollama model not found | Pull model on Ollama host; verify `OLLAMA_MODEL` matches `ollama list` |
-| Build exceeds size limit | Use `EMBEDDING_PROVIDER=ollama`; do not install `[local-embeddings]` |
-| Upload fails with OpenAI error | Set `EMBEDDING_PROVIDER=ollama` so document chunks stay on your Ollama host |
-| Tribunal fails with `[Errno 16] Device or resource busy` | Fixed in API: serverless uses an in-memory vector index (no Chroma file locks) and re-hydrates from SQLite before retrieval |
-| CORS errors | Same-origin `/server` routes should not need CORS; check `FRONTEND_URL` if using split deploy |
-| Uploads vanish | Expected on serverless `/tmp` — use Docker locally for persistent data |
+| Render build: `COPY src` not found | Set **Root Directory** to `apps/api` or use `dockerContext` in `render.yaml` |
+| Render crash: `IndexError` in `config.py` | Fixed: monorepo path detection walks parents safely in Docker |
+| `ollama_reachable: false` on `/health/ready` | API not in same region/network as `consultationAI`; check hostname casing |
+| CORS errors in browser | Set `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` on Render API |
+| UI calls `localhost:8000` in prod | Set `NEXT_PUBLIC_BACKEND_URL` on Vercel, redeploy |
+| Free tier cold start ~50s | First request after idle wakes the Render instance |
+| Uploads vanish on Render | Attach disk at `/app/data` and set data path env vars |
+
+---
+
+## Legacy: Vercel all-in-one (serverless API)
+
+The repo previously deployed web + API together via Vercel Services (`/server/*`). That path is deprecated for production because:
+
+- Vercel cannot reach private `consultationAI`
+- Serverless `/tmp` storage is ephemeral
+- Tribunal runs can hit serverless timeouts
+
+For local experimentation with `vercel dev`, run the API separately (`uvicorn` or Render) and set `NEXT_PUBLIC_BACKEND_URL`.
 
 ---
 
 ## Release checklist
 
-- [ ] Vercel project root = repo root, Framework = **Services**
-- [ ] `NEXT_PUBLIC_API_ROUTE_PREFIX=/server`
-- [ ] `OLLAMA_BASE_URL` reachable from the public internet
-- [ ] `OPENAI_API_KEY` set (embeddings)
-- [ ] `GET /server/health` returns 200
-- [ ] Sample import + tribunal question works end-to-end
+- [ ] Render API **Root Directory** = `apps/api`, disk at `/app/data`
+- [ ] Render env: `OLLAMA_BASE_URL=http://consultationAI:11434`, models, data paths, CORS
+- [ ] `GET /health` and `/health/ready` return 200 with `ollama_reachable: true`
+- [ ] Vercel `NEXT_PUBLIC_BACKEND_URL` = Render public URL
+- [ ] Corpus import + tribunal question works end-to-end

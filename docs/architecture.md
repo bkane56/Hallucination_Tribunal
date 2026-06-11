@@ -11,6 +11,18 @@ See the system diagram in the Architecture page of the web app.
 - **data/evals** — Evaluation test cases
 - **data/seed** — Demo policy documents
 
+## Production deployment
+
+```text
+Browser
+   └── Vercel (Next.js) ──HTTPS──► Render (FastAPI, /app/data disk)
+                                        └── private network ──► consultationAI (Ollama)
+```
+
+- UI calls the Render API via `NEXT_PUBLIC_BACKEND_URL` (cross-origin; CORS on API).
+- API uses `OLLAMA_BASE_URL=http://consultationAI:11434` for chat and embeddings.
+- SQLite, ChromaDB, and uploads persist on Render disk at `/app/data`.
+
 ## Data Flow
 
 1. Documents are extracted, chunked, embedded, and stored in ChromaDB + SQLite

@@ -11,12 +11,20 @@ async def test_health_check(client):
 
 
 @pytest.mark.asyncio
-async def test_readiness_check(client):
+async def test_readiness_check(client, monkeypatch):
+    async def ollama_ok():
+        return True
+
+    monkeypatch.setattr(
+        "hallucination_tribunal.api.routes._ollama_reachable",
+        ollama_ok,
+    )
     response = await client.get("/health/ready")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ready"
     assert data["directories_ready"] is True
+    assert data["providers"]["ollama_reachable"] is True
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,51 @@
+# Render Blueprint — Hallucination Tribunal API
+# https://render.com/docs/blueprint-spec
+#
+# Production Ollama runs on the private service consultationAI (same account/region).
+# UI deploys separately on Vercel; set NEXT_PUBLIC_BACKEND_URL to this service URL.
+
+services:
+  - type: web
+    name: hallucination-tribunal-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    plan: free
+    healthCheckPath: /health
+    disk:
+      name: tribunal-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: LLM_PROVIDER
+        value: ollama
+      - key: OLLAMA_BASE_URL
+        value: http://consultationAI:11434
+      - key: OLLAMA_MODEL
+        value: llama3.2:1b
+      - key: EMBEDDING_PROVIDER
+        value: ollama
+      - key: OLLAMA_EMBEDDING_MODEL
+        value: nomic-embed-text
+      - key: VECTOR_DB_PROVIDER
+        value: chromadb
+      - key: RETRIEVAL_MODE
+        value: hybrid
+      - key: LOG_LEVEL
+        value: info
+      - key: CHROMA_PERSIST_DIRECTORY
+        value: /app/data/chroma
+      - key: SQLITE_DATABASE_PATH
+        value: /app/data/tribunal.db
+      - key: UPLOAD_DIRECTORY
+        value: /app/data/uploads
+      - key: SEED_DIRECTORY
+        value: /app/data/seed
+      - key: EVALS_DIRECTORY
+        value: /app/data/evals

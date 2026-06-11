@@ -2,14 +2,20 @@
 
 ## Defaults
 
-- Documents stored locally in `data/uploads`
-- Vectors stored locally in ChromaDB
-- LLM inference via Ollama (local)
+- Documents stored on the API host (`data/uploads` locally, `/app/data/uploads` on Render)
+- Vectors stored in ChromaDB on the same host
+- LLM inference via Ollama on the private Render service `consultationAI`
 - No API keys in frontend
+
+## Production (Render + Vercel)
+
+- Document text for embeddings is sent to `consultationAI` when `EMBEDDING_PROVIDER=ollama`
+- Chat/tribunal prompts are sent to the same private Ollama host when `LLM_PROVIDER=ollama`
+- The Vercel UI never talks to Ollama directly—only to the Render API over HTTPS
 
 ## Hosted Providers
 
-OpenAI requires explicit `LLM_PROVIDER=openai` and `OPENAI_API_KEY=sk-********` in `.env`.
+OpenAI requires explicit `LLM_PROVIDER=openai` and `OPENAI_API_KEY` in environment variables.
 
 Document uploads do not use an LLM. They are chunked and embedded for vector search only.
 

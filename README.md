@@ -16,7 +16,7 @@ A portfolio RAG application that answers questions from a controlled document co
 | Frontend | Next.js 15, TypeScript, Tailwind CSS |
 | Backend | Python 3.12, FastAPI, Pydantic |
 | Vector DB | ChromaDB |
-| Embeddings | sentence-transformers (local) |
+| Embeddings | sentence-transformers (local dev), Ollama (production) |
 | LLM | Ollama (default), OpenAI (optional) |
 | Tooling | yarn (frontend), uv (backend) |
 
@@ -62,25 +62,25 @@ Open http://localhost:3000
 
 ## Deployment
 
-Production deploys **web + API together on Vercel** via [Vercel Services](https://vercel.com/docs/services). Configure your existing Ollama host in `OLLAMA_BASE_URL`.
+Production uses **Render for the API** and **Vercel for the UI**. Ollama runs on the private Render service `consultationAI`.
+
+| Component | Host |
+|---|---|
+| UI | Vercel (`NEXT_PUBLIC_BACKEND_URL` → Render API) |
+| API | Render Docker (`render.yaml`, `.env.render.example`) |
+| LLM | `http://consultationAI:11434` (Render private network) |
 
 See [docs/deployment.md](docs/deployment.md) for step-by-step instructions.
 
 ```bash
-# Deploy everything to Vercel
+# Deploy UI to Vercel
 ./scripts/deploy.sh vercel
 
-# Local multi-service dev
-./scripts/deploy.sh dev
-```
-
-Optional Docker stack for local API + Ollama (not used for Vercel production):
-
-```bash
+# Local Docker API + Ollama (development only)
 ./scripts/deploy.sh api
 ```
 
-### Docker
+### Docker (local full stack)
 
 ```bash
 docker compose up --build

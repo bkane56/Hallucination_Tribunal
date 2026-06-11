@@ -8,17 +8,25 @@ usage() {
   cat <<'EOF'
 Hallucination Tribunal deploy helpers
 
+Production (split deploy):
+  - API: Render Web Service (render.yaml, .env.render.example)
+  - UI:  Vercel (.env.vercel.example → NEXT_PUBLIC_BACKEND_URL)
+
 Usage:
-  ./scripts/deploy.sh vercel         Deploy web + API to Vercel (production)
+  ./scripts/deploy.sh vercel         Deploy Next.js UI to Vercel (production)
   ./scripts/deploy.sh vercel:preview Deploy a Vercel preview
-  ./scripts/deploy.sh dev            Run web + API locally via Vercel Services
-  ./scripts/deploy.sh api              Docker API stack (local only, optional)
-  ./scripts/deploy.sh api:check        Build the API Docker image only
+  ./scripts/deploy.sh dev            Run web locally via Vercel (API: uvicorn or Render)
+  ./scripts/deploy.sh api            Local Docker API + Ollama (not production)
+  ./scripts/deploy.sh api:check      Build the API Docker image only
+
+Render API:
+  Connect repo in Render dashboard or apply render.yaml Blueprint.
+  Root Directory: apps/api (or dockerContext in render.yaml).
+  See docs/deployment.md
 
 Prerequisites:
   - Vercel CLI (`npm i -g vercel`) and `vercel login`
-  - Project framework set to "Services" in Vercel (see docs/deployment.md)
-  - Environment variables from .env.vercel.example
+  - Environment variables from .env.vercel.example (UI) and .env.render.example (API)
 EOF
 }
 

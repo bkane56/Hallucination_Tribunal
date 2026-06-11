@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+import httpx
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from hallucination_tribunal import __version__
@@ -33,12 +34,28 @@ async def health_check():
     return HealthResponse(status="ok", version=__version__)
 
 
+async def _ollama_reachable() -> bool:
+    settings = get_settings()
+    if settings.llm_provider != "ollama" and settings.embedding_provider != "ollama":
+        return True
+    base_url = settings.ollama_base_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{base_url}/api/tags")
+            return response.is_success
+    except httpx.HTTPError:
+        return False
+
+
 @router.get("/health/ready")
 async def readiness_check():
     settings = get_settings()
     directories = settings.ensure_data_directories()
+    ollama_ok = await _ollama_reachable()
+    directories_ready = all(path.exists() for path in directories)
+    status = "ready" if directories_ready and ollama_ok else "degraded"
     return {
-        "status": "ready",
+        "status": status,
         "version": __version__,
         "environment": settings.app_env,
         "providers": {
@@ -46,8 +63,9 @@ async def readiness_check():
             "embedding": settings.embedding_provider,
             "vector_db": settings.vector_db_provider,
             "serverless": settings.is_serverless,
+            "ollama_reachable": ollama_ok,
         },
-        "directories_ready": all(path.exists() for path in directories),
+        "directories_ready": directories_ready,
     }
 
 

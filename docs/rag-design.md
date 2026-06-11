@@ -9,8 +9,8 @@
 
 Upload and retrieval use embeddings only (no LLM). Document text is chunked and vectorized for search.
 
-- **local** (default): `all-MiniLM-L6-v2` via sentence-transformers — runs on your machine
-- **ollama**: embedding model on your Ollama host (e.g. `nomic-embed-text`) — recommended for Vercel + private docs
+- **local** (default for local dev): `all-MiniLM-L6-v2` via sentence-transformers — runs on your machine
+- **ollama** (recommended for Render production): embedding model on `consultationAI` (e.g. `nomic-embed-text`)
 - **openai** (opt-in): `text-embedding-3-small` via OpenAI API — requires `OPENAI_API_KEY`; document chunks are sent to OpenAI
 
 ## Retrieval

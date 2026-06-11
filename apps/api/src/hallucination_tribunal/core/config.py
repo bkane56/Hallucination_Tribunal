@@ -9,12 +9,23 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _api_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _monorepo_root() -> Path | None:
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "data").is_dir() and (parent / "apps" / "api").is_dir():
+            return parent
+    return None
+
+
 def _env_files() -> tuple[str, ...]:
-    """Load .env from monorepo root first, then cwd."""
-    api_root = Path(__file__).resolve().parents[3]
-    monorepo_root = Path(__file__).resolve().parents[5]
-    if (monorepo_root / "data").exists():
-        return (str(monorepo_root / ".env"), str(api_root / ".env"), ".env")
+    """Load .env from monorepo root first, then api package root."""
+    api_root = _api_root()
+    mono = _monorepo_root()
+    if mono is not None:
+        return (str(mono / ".env"), str(api_root / ".env"), ".env")
     return (str(api_root / ".env"), ".env")
 
 
@@ -91,10 +102,10 @@ class Settings(BaseSettings):
 
     @property
     def project_root(self) -> Path:
-        candidate = Path(__file__).resolve().parents[5]
-        if (candidate / "data").exists():
-            return candidate
-        return Path(__file__).resolve().parents[3]
+        mono = _monorepo_root()
+        if mono is not None:
+            return mono
+        return _api_root()
 
     def resolve_path(self, path: str) -> Path:
         p = Path(path)

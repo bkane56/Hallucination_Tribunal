@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from hallucination_tribunal.core.config import Settings
+from hallucination_tribunal.core.config import Settings, _api_root, _monorepo_root
 
 
 def test_settings_max_upload_bytes():
@@ -24,6 +24,28 @@ def test_settings_cors_origins():
     assert "http://localhost:3000" in settings.cors_origins
     assert "https://staging.example.com" in settings.cors_origins
     assert "https://preview.example.com" in settings.cors_origins
+
+
+def test_api_root_points_at_package_tree():
+    api_root = _api_root()
+    assert (api_root / "src" / "hallucination_tribunal").is_dir()
+
+
+def test_monorepo_root_when_data_present():
+    mono = _monorepo_root()
+    if mono is None:
+        return
+    assert (mono / "data").is_dir()
+    assert (mono / "apps" / "api").is_dir()
+
+
+def test_settings_project_root_without_monorepo(monkeypatch):
+    monkeypatch.setattr(
+        "hallucination_tribunal.core.config._monorepo_root",
+        lambda: None,
+    )
+    settings = Settings()
+    assert settings.project_root == _api_root()
 
 
 def test_settings_vercel_defaults(monkeypatch):
