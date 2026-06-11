@@ -37,12 +37,30 @@ export const api = {
   listDocuments: () =>
     request<{ documents: Document[] }>("/documents"),
 
-  loadCorpusOverview: () =>
-    request<{
-      documents: Document[];
-      samples: SampleDocument[];
-      categories: string[];
-    }>("/corpus/overview"),
+  loadCorpusOverview: async () => {
+    const response = await fetch(`${BACKEND_URL}/corpus/overview`);
+    if (response.ok) {
+      return response.json() as Promise<{
+        documents: Document[];
+        samples: SampleDocument[];
+        categories: string[];
+      }>;
+    }
+    // Backward-compatible fallback when API is not yet redeployed with /corpus/overview
+    if (response.status === 404) {
+      const [documents, samples] = await Promise.all([
+        request<{ documents: Document[] }>("/documents"),
+        request<{ samples: SampleDocument[]; categories: string[] }>("/documents/samples"),
+      ]);
+      return {
+        documents: documents.documents,
+        samples: samples.samples,
+        categories: samples.categories,
+      };
+    }
+    const error = await response.json().catch(() => ({ detail: response.statusText }));
+    throw new Error(error.detail || "Request failed");
+  },
 
   uploadDocument: async (file: File) => {
     const formData = new FormData();
