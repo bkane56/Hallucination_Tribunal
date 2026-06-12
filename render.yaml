@@ -1,7 +1,8 @@
 # Render Blueprint — Hallucination Tribunal API
 # https://render.com/docs/blueprint-spec
 #
-# Production Ollama runs on the private service consultationAI (same account/region).
+# Production LLM and embeddings use OpenAI (set OPENAI_API_KEY in Render dashboard).
+# Legacy Ollama env vars are retained but unused unless providers are switched back.
 # UI deploys separately on Vercel; set NEXT_PUBLIC_BACKEND_URL to this service URL.
 
 services:
@@ -24,13 +25,19 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       - key: LLM_PROVIDER
-        value: ollama
+        value: openai
+      - key: EMBEDDING_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-small
       - key: OLLAMA_BASE_URL
         value: http://consultationAI:11434
       - key: OLLAMA_MODEL
         value: llama3.2:1b
-      - key: EMBEDDING_PROVIDER
-        value: ollama
       - key: OLLAMA_EMBEDDING_MODEL
         value: nomic-embed-text
       - key: VECTOR_DB_PROVIDER
