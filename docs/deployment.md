@@ -148,6 +148,7 @@ On Render, run a private Ollama service in the **same region** as the API and po
 | `ollama_reachable: false` on `/health/ready` | Only applies when a provider is `ollama`; check hostname and network |
 | CORS errors in browser | Set `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` on Render API |
 | UI calls `localhost:8000` in prod | Set `NEXT_PUBLIC_BACKEND_URL` on Vercel, redeploy |
+| Build fails: framework set to "services", no services declared | Ensure root `vercel.json` declares the `web` service (see below), or switch Vercel **Root Directory** to `apps/web` and **Framework** to Next.js |
 | Evaluations fail: no test cases | Bundled cases seed on startup; confirm `/app/data/evals` on Render disk |
 | Free tier cold start ~50s | First request after idle wakes the Render instance |
 | Uploads vanish on Render | Attach disk at `/app/data` and set data path env vars |

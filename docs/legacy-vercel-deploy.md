@@ -1,18 +1,20 @@
 # Legacy: Vercel All-in-One Deploy
 
-This repository previously supported deploying the Next.js UI and FastAPI API together on Vercel using **Vercel Services** (`experimentalServices` in `vercel.json`) with the API mounted at `/server/*`.
+This repository previously deployed the FastAPI API on Vercel alongside the Next.js UI using **Vercel Services** with the API mounted at `/server/*`. That **API-on-Vercel** path is deprecated.
 
-That path is **deprecated** because:
+## Current Vercel UI deploy
 
-- Vercel serverless functions cannot reach private Render/Ollama hosts
-- `/tmp` storage is ephemeral on serverless
-- Tribunal runs can exceed serverless timeouts
+Production UI still uses Vercel **Services** framework when the project is configured that way in the Vercel dashboard. Root [`vercel.json`](../vercel.json) declares a **web-only** service:
 
-## Current production model
+- `entrypoint`: `apps/web` (Next.js)
+- No API service — the Render API handles LLM/RAG via `NEXT_PUBLIC_BACKEND_URL`
 
-- **UI**: Vercel with `NEXT_PUBLIC_BACKEND_URL` pointing at Render
-- **API**: Render Docker service (see [deployment.md](deployment.md))
+To migrate off Services framework entirely, set Vercel **Root Directory** to `apps/web`, **Framework** to Next.js, and remove `vercel.json` from the repo root.
 
-## Local development
+## Why the old all-in-one path was removed
 
-Run the API locally or on Render and set `NEXT_PUBLIC_BACKEND_URL` in the web app. Do not rely on same-origin `/server` routing.
+- Vercel cannot reach private Ollama hosts
+- Serverless `/tmp` storage is ephemeral
+- Tribunal runs can hit serverless timeouts
+
+For local experimentation, run the API separately and set `NEXT_PUBLIC_BACKEND_URL`.
