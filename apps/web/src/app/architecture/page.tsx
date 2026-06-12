@@ -42,9 +42,10 @@ export default function ArchitecturePage() {
       <section className="rounded-lg border border-paper-line bg-ivory p-6">
         <h2 className="mb-3 text-lg font-semibold">Data Privacy</h2>
         <p className="text-sm text-slate-gray">
-          Documents are stored locally by default. Ollama provides local LLM inference.
-          Hosted providers (OpenAI) require explicit configuration and are never used
-          for document processing without opt-in.
+          Documents and chunk metadata are stored locally in ChromaDB and SQLite. By
+          default, embeddings and tribunal LLM calls use OpenAI. For fully local
+          inference, configure Ollama or local embeddings in the API environment—see
+          docs/privacy-and-security.md.
         </p>
       </section>
 

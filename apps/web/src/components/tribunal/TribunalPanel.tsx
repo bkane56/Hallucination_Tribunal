@@ -47,8 +47,8 @@ export function TribunalPanel() {
         </button>
         {loading && (
           <p className="mt-3 text-sm text-slate-gray">
-            The tribunal runs five review stages on Ollama. This can take 1–3 minutes on
-            first use after the server wakes up.
+            The tribunal runs five review stages via the configured LLM. This typically
+            takes 30 seconds to 2 minutes.
           </p>
         )}
         {error && (

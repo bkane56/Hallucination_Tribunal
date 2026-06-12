@@ -1,13 +1,13 @@
 # The Hallucination Tribunal
 
-A portfolio RAG application that answers questions from a controlled document corpus and subjects each answer to adversarial review: **Witness → Prosecutor → Judge**. Built to demonstrate retrieval-augmented generation, multi-agent orchestration, and claim-level verification in a local-first stack.
+A portfolio RAG application that answers questions from a controlled document corpus and subjects each answer to adversarial review: **Witness → Prosecutor → Judge**. Built to demonstrate retrieval-augmented generation, multi-agent orchestration, and claim-level verification.
 
 ## What It Demonstrates
 
 - Hybrid retrieval (vector + BM25) with structured, citeable answers
 - Multi-agent tribunal pipeline with per-claim verdicts
 - Document ingestion (PDF, MD, TXT, DOCX, HTML) and evaluation dashboard
-- Privacy-conscious defaults (Ollama + ChromaDB; OpenAI optional)
+- OpenAI for LLM and embeddings by default; [Ollama](https://ollama.com/) or local embeddings available as self-hosted alternatives
 
 ## Tech Stack
 
@@ -16,8 +16,8 @@ A portfolio RAG application that answers questions from a controlled document co
 | Frontend | Next.js 15, TypeScript, Tailwind CSS |
 | Backend | Python 3.12, FastAPI, Pydantic |
 | Vector DB | ChromaDB |
-| Embeddings | sentence-transformers (local dev), Ollama (production) |
-| LLM | Ollama (default), OpenAI (optional) |
+| Embeddings | OpenAI (`text-embedding-3-small`); optional local or Ollama |
+| LLM | OpenAI (`gpt-4o-mini`); optional Ollama |
 | Tooling | yarn (frontend), uv (backend) |
 
 ## Sample Data
@@ -34,13 +34,43 @@ The demo ships with ready-to-use corpus content so reviewers can try the tribuna
 
 - Node.js 20+, Python 3.12+
 - [uv](https://docs.astral.sh/uv/), [yarn](https://yarnpkg.com/)
-- [Ollama](https://ollama.com/) with a chat model (default: `llama3.1:8b`)
+- An [OpenAI API key](https://platform.openai.com/api-keys)
 
 ### Environment
 
 ```bash
 cp .env.example .env
+# Edit .env and set OPENAI_API_KEY
 ```
+
+Required variables for the default setup:
+
+```bash
+LLM_PROVIDER=openai
+EMBEDDING_PROVIDER=openai
+OPENAI_API_KEY=your-key-here
+```
+
+If you previously indexed documents with local or Ollama embeddings, re-embed after switching providers:
+
+```bash
+curl -X POST http://localhost:8000/documents/rebuild-index
+```
+
+See [docs/privacy-and-security.md](docs/privacy-and-security.md) for what data is sent to hosted providers.
+
+### Using Ollama instead (optional)
+
+To keep document text and LLM inference on your machine, set in `.env`:
+
+```bash
+LLM_PROVIDER=ollama
+EMBEDDING_PROVIDER=ollama   # or local
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1:8b
+```
+
+Install [Ollama](https://ollama.com/) and pull your models. For Docker with Ollama: `docker compose --profile ollama up --build`.
 
 ### Backend
 
@@ -62,28 +92,23 @@ Open http://localhost:3000
 
 ## Deployment
 
-Production uses **Render for the API** and **Vercel for the UI**. Ollama runs on the private Render service `consultationAI`.
+Production can use **Render for the API** and **Vercel for the UI** (see [docs/deployment.md](docs/deployment.md) for the Ollama-on-Render layout). Local development in this repo defaults to **OpenAI** for both LLM and embeddings.
 
 | Component | Host |
 |---|---|
 | UI | Vercel (`NEXT_PUBLIC_BACKEND_URL` → Render API) |
 | API | Render Docker (`render.yaml`, `.env.render.example`) |
-| LLM | `http://consultationAI:11434` (Render private network) |
-
-See [docs/deployment.md](docs/deployment.md) for step-by-step instructions.
+| LLM (Render example) | Private Ollama on Render |
 
 ```bash
 # Deploy UI to Vercel
 ./scripts/deploy.sh vercel
 
-# Local Docker API + Ollama (development only)
-./scripts/deploy.sh api
-```
-
-### Docker (local full stack)
-
-```bash
+# Local Docker API + web (OpenAI via .env)
 docker compose up --build
+
+# Local Docker with Ollama (optional profile)
+docker compose --profile ollama up --build
 ```
 
 ## Try the Demo
@@ -112,6 +137,7 @@ cd apps/web && yarn playwright install chromium && yarn test:e2e
 - Complex PDF layouts may lose structure
 - Reranking not included in MVP
 - Evaluation metrics are heuristic
+- OpenAI usage sends document chunks and tribunal prompts to OpenAI's API
 
 ## License
 

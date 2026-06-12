@@ -9,8 +9,6 @@ services:
       - .env
     volumes:
       - ./data:/app/data
-    depends_on:
-      - ollama
 
   web:
     build:
@@ -24,6 +22,8 @@ services:
       - api
 
   ollama:
+    profiles:
+      - ollama
     image: ollama/ollama:latest
     ports:
       - "11434:11434"

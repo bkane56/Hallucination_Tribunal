@@ -33,6 +33,7 @@ async def test_hybrid_retrieve(mock_db, mock_vector, mock_embed):
 
     db = MagicMock()
     db.get_all_chunks = AsyncMock(return_value=chunks)
+    db.get_chunks_by_ids = AsyncMock(return_value=chunks[:1])
     db.list_documents = AsyncMock(
         return_value=[MagicMock(document_id="d1", filename="policy.md")]
     )

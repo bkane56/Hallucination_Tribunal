@@ -43,14 +43,14 @@ class Settings(BaseSettings):
     api_root_path: str = ""
     storage_root: str = ""
 
-    llm_provider: Literal["ollama", "openai"] = "ollama"
+    llm_provider: Literal["ollama", "openai"] = "openai"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
     ollama_embedding_model: str = "nomic-embed-text"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
-    embedding_provider: Literal["local", "ollama", "openai"] = "local"
+    embedding_provider: Literal["local", "ollama", "openai"] = "openai"
     local_embedding_model: str = "all-MiniLM-L6-v2"
     openai_embedding_model: str = "text-embedding-3-small"
 
@@ -79,6 +79,15 @@ class Settings(BaseSettings):
             self.storage_root = "/tmp/hallucination-tribunal"
         if os.getenv("VERCEL") and not self.api_root_path.strip():
             self.api_root_path = os.getenv("API_ROOT_PATH", "/server")
+        return self
+
+    @model_validator(mode="after")
+    def require_openai_api_key(self) -> "Settings":
+        uses_openai = self.llm_provider == "openai" or self.embedding_provider == "openai"
+        if uses_openai and not self.openai_api_key.strip():
+            raise ValueError(
+                "OPENAI_API_KEY is required when LLM_PROVIDER or EMBEDDING_PROVIDER is openai"
+            )
         return self
 
     @property

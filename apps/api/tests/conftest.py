@@ -20,6 +20,8 @@ def reset_state(tmp_path, monkeypatch):
     monkeypatch.setenv("SQLITE_DATABASE_PATH", str(db_path))
     monkeypatch.setenv("UPLOAD_DIRECTORY", str(upload_dir))
     monkeypatch.setenv("CHROMA_PERSIST_DIRECTORY", str(chroma_dir))
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "local")
     get_settings.cache_clear()
     get_embedding_provider.cache_clear()
     reset_database()

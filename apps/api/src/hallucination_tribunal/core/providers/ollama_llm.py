@@ -105,7 +105,11 @@ class OpenAILLMProvider(LLMProvider):
         user_prompt: str,
         schema: dict[str, Any],
     ) -> dict[str, Any]:
-        raw = await self.generate(system_prompt, user_prompt, json_mode=True)
+        enhanced_system = (
+            f"{system_prompt}\n\nRespond with valid JSON matching this schema:\n"
+            f"{json.dumps(schema, indent=2)}"
+        )
+        raw = await self.generate(enhanced_system, user_prompt, json_mode=True)
         return json.loads(raw)
 
 
