@@ -1,14 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import type { EvaluationRun } from "@/lib/types";
 import { formatReliability } from "@/lib/utils";
 
 export function EvaluationDashboard() {
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [run, setRun] = useState<EvaluationRun | null>(null);
+  const [history, setHistory] = useState<EvaluationRun[]>([]);
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const result = await api.listEvaluationRuns();
+      setHistory(result.runs);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   async function handleRunAll() {
     setLoading(true);
@@ -16,10 +34,21 @@ export function EvaluationDashboard() {
     try {
       const result = await api.runEvaluations();
       setRun(result);
+      await loadHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Evaluation failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSelectRun(runId: string) {
+    setError(null);
+    try {
+      const selected = await api.getEvaluationRun(runId);
+      setRun(selected);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load run");
     }
   }
 
@@ -47,6 +76,32 @@ export function EvaluationDashboard() {
           </p>
         )}
       </div>
+
+      {!historyLoading && history.length > 0 && (
+        <div className="rounded-lg border border-paper-line bg-ivory p-4">
+          <h3 className="mb-3 font-semibold">Run History</h3>
+          <ul className="space-y-2 text-sm">
+            {history.map((item) => {
+              const passRate = item.aggregate_metrics?.pass_rate;
+              const label =
+                typeof passRate === "number"
+                  ? `${Math.round(passRate * 100)}% pass`
+                  : "completed";
+              return (
+                <li key={item.run_id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectRun(item.run_id)}
+                    className="text-left text-charcoal underline-offset-2 hover:underline"
+                  >
+                    {new Date(item.completed_at).toLocaleString()} — {label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {run && metrics && (
         <>

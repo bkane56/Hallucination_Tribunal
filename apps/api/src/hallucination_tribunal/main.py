@@ -10,12 +10,15 @@ from hallucination_tribunal.api.routes import router
 from hallucination_tribunal.core.config import get_settings
 from hallucination_tribunal.core.db import get_database
 from hallucination_tribunal.core.logging import configure_logging
+from hallucination_tribunal.evaluations.service import seed_eval_cases
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
-    get_settings().ensure_data_directories()
+    settings = get_settings()
+    settings.ensure_data_directories()
+    seed_eval_cases(settings.resolve_path(settings.evals_directory))
     db = get_database()
     await db.initialize()
     yield
@@ -35,8 +38,6 @@ def create_app() -> FastAPI:
         "allow_headers": ["*"],
         "allow_origins": settings.cors_origins,
     }
-    if settings.app_env == "production":
-        cors_kwargs["allow_origin_regex"] = r"https://.*\.vercel\.app"
     app.add_middleware(CORSMiddleware, **cors_kwargs)
     app.include_router(router)
     return app

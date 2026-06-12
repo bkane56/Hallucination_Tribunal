@@ -34,8 +34,9 @@ export function SiteHeader() {
 export function PrivacyBanner() {
   return (
     <div className="border border-paper-line bg-ivory px-4 py-3 text-sm text-slate-gray">
-      Privacy note: Documents are stored locally by default. Hosted LLM usage requires
-      explicit configuration and is never enabled without your consent.
+      Privacy note: Documents are stored on the API host. When configured with hosted
+      providers (e.g. OpenAI), document chunks and tribunal prompts are sent to third-party
+      APIs. Use Ollama or local embeddings for fully private inference.
     </div>
   );
 }

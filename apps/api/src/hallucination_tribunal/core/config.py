@@ -38,7 +38,6 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     frontend_url: str = "http://localhost:3000"
-    backend_url: str = "http://localhost:8000"
     cors_allowed_origins: str = ""
     api_root_path: str = ""
     storage_root: str = ""

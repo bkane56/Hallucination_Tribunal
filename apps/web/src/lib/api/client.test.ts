@@ -144,30 +144,18 @@ describe("api client", () => {
 
     const result = await api.loadCorpusOverview();
     expect(result.samples).toHaveLength(1);
-    expect(fetch).toHaveBeenCalledWith(`${BACKEND_URL}/corpus/overview`);
+    expect(fetch).toHaveBeenCalledWith(`${BACKEND_URL}/corpus/overview`, undefined);
   });
 
-  it("falls back to legacy corpus endpoints when overview is missing", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found" } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          documents: [{ document_id: "d1", filename: "policy.md" }],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          samples: [{ sample_id: "nist-ai-rmf", title: "NIST AI RMF" }],
-          categories: ["NIST & Federal Standards"],
-        }),
-      } as Response);
+  it("gets evaluation run by id", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ run_id: "run-1", case_results: [] }),
+    } as Response);
 
-    const result = await api.loadCorpusOverview();
-    expect(result.documents).toHaveLength(1);
-    expect(result.samples).toHaveLength(1);
-    expect(fetch).toHaveBeenCalledTimes(3);
+    const result = await api.getEvaluationRun("run-1");
+    expect(result.run_id).toBe("run-1");
+    expect(fetch).toHaveBeenCalledWith(`${BACKEND_URL}/evaluations/runs/run-1`, undefined);
   });
 
   it("lists sample governance documents", async () => {

@@ -5,6 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from hallucination_tribunal.models.coercion import CoercedReliabilityScore, CoercedVerdict
 from hallucination_tribunal.models.domain import (
     Claim,
     DocumentStatus,
@@ -95,13 +96,13 @@ class TribunalAskResponse(BaseModel):
     tribunal_result_id: str
     question: str
     final_answer: str
-    overall_verdict: Verdict | str
-    reliability_score: float | str
+    overall_verdict: CoercedVerdict
+    reliability_score: CoercedReliabilityScore
     retrieved_sources: list[RetrievedSource]
     witness_answer: WitnessAnswer
     claims: list[Claim]
     prosecutor_objections: list[ProsecutorObjection]
-    judge_verdict: list[JudgeVerdict]
+    judge_verdict: list[JudgeVerdict]  # domain model field: judge_verdicts
     created_at: datetime
 
 
@@ -112,7 +113,7 @@ class EvaluationCaseResult(BaseModel):
     citation_accuracy: float
     unsupported_claim_count: int
     contradicted_claim_count: int
-    reliability_score: float | str
+    reliability_score: CoercedReliabilityScore
     expected_verdict_behavior: str
     passed: bool
 
@@ -127,8 +128,3 @@ class EvaluationRunResponse(BaseModel):
 
 class EvaluationRunsListResponse(BaseModel):
     runs: list[EvaluationRunResponse]
-
-
-class ErrorResponse(BaseModel):
-    detail: str
-    code: str

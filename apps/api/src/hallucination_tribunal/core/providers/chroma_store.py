@@ -6,11 +6,13 @@ import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from hallucination_tribunal.core.config import get_settings
+from hallucination_tribunal.core.logging import get_logger
 from hallucination_tribunal.core.providers.memory_vector_store import InMemoryVectorStore
 from hallucination_tribunal.core.providers.vector_store import VectorStore
 from hallucination_tribunal.models.domain import Chunk
 
 COLLECTION_NAME = "tribunal_chunks"
+logger = get_logger(__name__)
 
 
 class ChromaVectorStore(VectorStore):
@@ -49,8 +51,8 @@ class ChromaVectorStore(VectorStore):
     def delete_by_document_id(self, document_id: str) -> None:
         try:
             self.collection.delete(where={"document_id": document_id})
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("chroma_delete_failed", document_id=document_id, error=str(exc))
 
     def query(
         self,
@@ -88,8 +90,8 @@ class ChromaVectorStore(VectorStore):
     def clear(self) -> None:
         try:
             self.client.delete_collection(COLLECTION_NAME)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("chroma_clear_failed", error=str(exc))
         self.collection = self.client.get_or_create_collection(
             name=COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},

@@ -59,6 +59,8 @@ curl -X POST http://localhost:8000/documents/rebuild-index
 
 See [docs/privacy-and-security.md](docs/privacy-and-security.md) for what data is sent to hosted providers.
 
+Full variable reference: [docs/configuration.md](docs/configuration.md).
+
 ### Using Ollama instead (optional)
 
 To keep document text and LLM inference on your machine, set in `.env`:
@@ -92,13 +94,13 @@ Open http://localhost:3000
 
 ## Deployment
 
-Production can use **Render for the API** and **Vercel for the UI** (see [docs/deployment.md](docs/deployment.md) for the Ollama-on-Render layout). Local development in this repo defaults to **OpenAI** for both LLM and embeddings.
+Production uses **Render for the API** and **Vercel for the UI**, with **OpenAI** for LLM and embeddings by default. See [docs/deployment.md](docs/deployment.md) for full steps and optional self-hosted Ollama.
 
 | Component | Host |
 |---|---|
 | UI | Vercel (`NEXT_PUBLIC_BACKEND_URL` → Render API) |
 | API | Render Docker (`render.yaml`, `.env.render.example`) |
-| LLM (Render example) | Private Ollama on Render |
+| LLM + embeddings | OpenAI API (optional Ollama for private inference) |
 
 ```bash
 # Deploy UI to Vercel
@@ -120,8 +122,10 @@ docker compose --profile ollama up --build
 
 ## Tests
 
+CI runs on push/PR via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ```bash
-# Backend
+# Backend (from apps/api — coverage gate is 80%)
 cd apps/api && uv run pytest --cov=hallucination_tribunal --cov-report=term-missing
 
 # Frontend
@@ -142,3 +146,7 @@ cd apps/web && yarn playwright install chromium && yarn test:e2e
 ## License
 
 MIT
+
+## Original specification
+
+See [the_hallucination_tribunal_requirements.md](the_hallucination_tribunal_requirements.md) for the full project requirements document.

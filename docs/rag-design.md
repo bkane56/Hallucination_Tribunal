@@ -3,15 +3,16 @@
 ## Chunking
 
 - Recursive character splitting with configurable `CHUNK_SIZE` and `CHUNK_OVERLAP`
+- Token estimates via `tiktoken` when available
 - Metadata preserved: document_id, filename, page, section
 
 ## Embeddings
 
 Upload and retrieval use embeddings only (no LLM). Document text is chunked and vectorized for search.
 
-- **local** (default for local dev): `all-MiniLM-L6-v2` via sentence-transformers — runs on your machine
-- **ollama** (recommended for Render production): embedding model on `consultationAI` (e.g. `nomic-embed-text`)
-- **openai** (opt-in): `text-embedding-3-small` via OpenAI API — requires `OPENAI_API_KEY`; document chunks are sent to OpenAI
+- **openai** (default): `text-embedding-3-small` via OpenAI API — requires `OPENAI_API_KEY`; document chunks are sent to OpenAI
+- **local**: `all-MiniLM-L6-v2` via sentence-transformers — runs on the API host; requires optional `local-embeddings` extra
+- **ollama**: embedding model on your Ollama host (e.g. `nomic-embed-text`)
 
 ## Retrieval
 

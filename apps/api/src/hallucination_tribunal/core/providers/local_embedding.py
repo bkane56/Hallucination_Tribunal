@@ -3,7 +3,10 @@
 from functools import lru_cache
 
 from hallucination_tribunal.core.config import get_settings
+from hallucination_tribunal.core.logging import get_logger
 from hallucination_tribunal.core.providers.embedding import EmbeddingProvider, iter_text_batches
+
+logger = get_logger(__name__)
 
 
 class LocalEmbeddingProvider(EmbeddingProvider):
@@ -80,7 +83,12 @@ def get_embedding_provider() -> EmbeddingProvider:
         import sentence_transformers  # noqa: F401
 
         return LocalEmbeddingProvider()
-    except Exception:
+    except Exception as exc:
+        logger.warning(
+            "local_embedding_unavailable",
+            error=str(exc),
+            fallback="simple_embedding",
+        )
         from hallucination_tribunal.core.providers.simple_embedding import (
             SimpleEmbeddingProvider,
         )

@@ -7,6 +7,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from hallucination_tribunal import __version__
 from hallucination_tribunal.core.config import get_settings
+from hallucination_tribunal.core.logging import get_logger
 from hallucination_tribunal.documents.service import DocumentService
 from hallucination_tribunal.evaluations.service import EvaluationService
 from hallucination_tribunal.models.domain import Document
@@ -29,6 +30,7 @@ from hallucination_tribunal.models.schemas import (
 from hallucination_tribunal.tribunal.orchestrator import TribunalOrchestrator
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 def _document_response(doc: Document) -> DocumentResponse:
@@ -117,7 +119,12 @@ async def upload_document(file: UploadFile = File(...)):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc), headers={"X-Error-Code": "VALIDATION_ERROR"}) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc), headers={"X-Error-Code": "INGESTION_ERROR"}) from exc
+        logger.exception("document_upload_failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Document ingestion failed",
+            headers={"X-Error-Code": "INGESTION_ERROR"},
+        ) from exc
 
     return DocumentUploadResponse(
         document_id=doc.document_id,
@@ -241,9 +248,10 @@ async def ask_tribunal(request: TribunalAskRequest):
             top_k=request.top_k,
         )
     except Exception as exc:
+        logger.exception("tribunal_pipeline_failed")
         raise HTTPException(
             status_code=503,
-            detail=f"Tribunal pipeline failed ({type(exc).__name__}): {exc}",
+            detail="Tribunal pipeline failed",
             headers={"X-Error-Code": "TRIBUNAL_ERROR"},
         ) from exc
 
@@ -293,7 +301,8 @@ async def run_evaluations():
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("evaluation_run_failed")
+        raise HTTPException(status_code=500, detail="Evaluation run failed") from exc
 
     return EvaluationRunResponse(
         run_id=result["run_id"],

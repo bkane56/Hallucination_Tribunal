@@ -4,22 +4,24 @@
 
 - Documents stored on the API host (`data/uploads` locally, `/app/data/uploads` on Render)
 - Vectors stored in ChromaDB on the same host
-- LLM inference via Ollama on the private Render service `consultationAI`
+- LLM and embeddings via **OpenAI** when `LLM_PROVIDER=openai` and `EMBEDDING_PROVIDER=openai`
 - No API keys in frontend
 
 ## Production (Render + Vercel)
 
-- Document text for embeddings is sent to `consultationAI` when `EMBEDDING_PROVIDER=ollama`
-- Chat/tribunal prompts are sent to the same private Ollama host when `LLM_PROVIDER=ollama`
-- The Vercel UI never talks to Ollama directly—only to the Render API over HTTPS
+- Document chunks are sent to OpenAI when `EMBEDDING_PROVIDER=openai`
+- Tribunal prompts are sent to OpenAI when `LLM_PROVIDER=openai`
+- The Vercel UI never talks to OpenAI directly — only to the Render API over HTTPS
+- Set `OPENAI_API_KEY` only on the Render API service
 
-## Hosted Providers
+## Self-hosted providers
 
-OpenAI requires explicit `LLM_PROVIDER=openai` and `OPENAI_API_KEY` in environment variables.
+Use `ollama` or `local` providers to keep document text and inference on your infrastructure:
 
-Document uploads do not use an LLM. They are chunked and embedded for vector search only.
+- **ollama**: document chunks and tribunal prompts go to your Ollama host
+- **local**: embeddings run via sentence-transformers on the API host (requires optional `local-embeddings` install)
 
-Documents are not sent to hosted embedding APIs unless `EMBEDDING_PROVIDER=openai`. Use `local` or `ollama` to keep proprietary text on your infrastructure.
+See [docs/deployment.md](deployment.md) for Ollama setup.
 
 ## Upload Security
 

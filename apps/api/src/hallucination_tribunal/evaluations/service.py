@@ -1,7 +1,9 @@
 """Evaluation service."""
 
 import json
+import shutil
 from datetime import datetime
+from importlib.resources import files
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,18 +16,33 @@ from hallucination_tribunal.tribunal.orchestrator import TribunalOrchestrator
 
 logger = get_logger(__name__)
 
+_BUNDLED_TEST_CASES = files("hallucination_tribunal.evaluations").joinpath(
+    "bundled_test_cases.json"
+)
+
+
+def seed_eval_cases(eval_dir: Path) -> None:
+    """Copy bundled test cases to disk when missing (e.g. fresh Render volume)."""
+    eval_dir.mkdir(parents=True, exist_ok=True)
+    target = eval_dir / "test_cases.json"
+    if target.exists():
+        return
+    shutil.copy(_BUNDLED_TEST_CASES, target)
+    logger.info("seeded_eval_test_cases", path=str(target))
+
 
 class EvaluationService:
     def __init__(self):
         self.settings = get_settings()
         self.db = get_database()
         self.orchestrator = TribunalOrchestrator()
-        self.eval_dir = self.settings.resolve_path("./data/evals")
+        self.eval_dir = self.settings.resolve_path(self.settings.evals_directory)
 
     def load_test_cases(self) -> list[dict]:
+        seed_eval_cases(self.eval_dir)
         path = self.eval_dir / "test_cases.json"
         if not path.exists():
-            return []
+            return json.loads(_BUNDLED_TEST_CASES.read_text(encoding="utf-8"))
         return json.loads(path.read_text(encoding="utf-8"))
 
     async def run_evaluations(self) -> dict:

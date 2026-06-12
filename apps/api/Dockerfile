@@ -11,14 +11,14 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml README.md ./
 COPY src ./src
 
-# Production (Render) uses Ollama embeddings — skip torch/sentence-transformers (~2GB+).
+# Production (Render) defaults to OpenAI embeddings — skip torch/sentence-transformers (~2GB+).
 # Set INSTALL_LOCAL_EMBEDDINGS=1 for local Docker stacks that use EMBEDDING_PROVIDER=local.
 ARG INSTALL_LOCAL_EMBEDDINGS=0
 RUN if [ "$INSTALL_LOCAL_EMBEDDINGS" = "1" ]; then \
       uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu \
-      && uv pip install --system -e ".[local-embeddings,openai]"; \
+      && uv pip install --system -e ".[local-embeddings]"; \
     else \
-      uv pip install --system -e ".[openai]"; \
+      uv pip install --system -e .; \
     fi
 
 ENV PYTHONPATH=/app/src

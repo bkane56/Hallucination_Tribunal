@@ -1,19 +1,19 @@
 # Deployment Guide
 
-Production uses a **split deploy**: FastAPI on **Render**, Next.js UI on **Vercel**, Ollama on the private Render service **consultationAI**.
+Production uses a **split deploy**: FastAPI on **Render**, Next.js UI on **Vercel**, with **OpenAI** for LLM and embeddings by default.
 
 | Service | Host | URL |
 |---|---|---|
 | Web UI | Vercel | `https://your-app.vercel.app` |
 | API | Render (Docker) | `https://your-api.onrender.com` |
-| LLM + embeddings | Render private service | `http://consultationAI:11434` (internal only) |
+| LLM + embeddings | OpenAI API | Configured via `OPENAI_API_KEY` on Render |
 
 ```text
 Browser → your-app.vercel.app (Next.js)
               │
               └── HTTPS → your-api.onrender.com (FastAPI)
                             │
-                            └── HTTP → consultationAI:11434 (Ollama)
+                            └── HTTPS → api.openai.com (LLM + embeddings)
 ```
 
 ---
@@ -21,8 +21,7 @@ Browser → your-app.vercel.app (Next.js)
 ## Prerequisites
 
 - GitHub repo connected to Render and Vercel
-- Private Ollama service `consultationAI` in the **same Render region** as the API
-- Models on Ollama: `llama3.2:1b` (chat), `nomic-embed-text` (embeddings)
+- [OpenAI API key](https://platform.openai.com/api-keys) for production LLM and embeddings
 - [Vercel CLI](https://vercel.com/docs/cli) for UI deploys (optional)
 
 ---
@@ -32,7 +31,7 @@ Browser → your-app.vercel.app (Next.js)
 ### Option A: Blueprint (`render.yaml`)
 
 1. In Render → **New** → **Blueprint** → connect `Hallucination_Tribunal`.
-2. Set `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` to your Vercel URL when prompted.
+2. Set `OPENAI_API_KEY`, `FRONTEND_URL`, and `CORS_ALLOWED_ORIGINS` when prompted.
 3. Confirm disk mount at `/app/data` (1 GB).
 
 ### Option B: Manual Web Service
@@ -43,11 +42,8 @@ Browser → your-app.vercel.app (Next.js)
 | **Dockerfile Path** | `Dockerfile` |
 | **Health check** | `/health` |
 | **Disk mount** | `/app/data` (1 GB+) |
-| **Region** | Same as `consultationAI` |
 
 Copy environment variables from [`.env.render.example`](../.env.render.example).
-
-**Important:** `OLLAMA_BASE_URL=http://consultationAI:11434` only works from Render services on the private network—not from Vercel or your laptop.
 
 ### Smoke test
 
@@ -56,7 +52,7 @@ curl https://your-api.onrender.com/health
 curl https://your-api.onrender.com/health/ready
 ```
 
-`/health/ready` reports `ollama_reachable` when the API can reach `consultationAI`.
+`/health/ready` reports provider configuration and directory readiness. When using Ollama, it also reports `ollama_reachable`.
 
 ---
 
@@ -72,7 +68,7 @@ curl https://your-api.onrender.com/health/ready
 
 Copy from [`.env.vercel.example`](../.env.vercel.example).
 
-**Do not set** `NEXT_PUBLIC_API_ROUTE_PREFIX`, `API_ROOT_PATH`, or `OLLAMA_*` on Vercel.
+**Do not set** `OLLAMA_*` or `OPENAI_*` on Vercel — those belong on the Render API only.
 
 ```bash
 vercel login
@@ -95,15 +91,29 @@ vercel link
 
 ```bash
 cp .env.example .env
+# Set OPENAI_API_KEY in .env
 # Backend
 cd apps/api && uv sync --extra dev && uv run uvicorn hallucination_tribunal.main:app --reload --port 8000
 # Frontend
 cd apps/web && yarn install && yarn dev
 ```
 
-Local Ollama: `OLLAMA_BASE_URL=http://localhost:11434`
+### Local Docker (API + web)
 
-### Local Docker (API + Ollama)
+```bash
+docker compose up --build
+```
+
+### Local Docker with Ollama (optional)
+
+```bash
+# Set LLM_PROVIDER=ollama and EMBEDDING_PROVIDER=ollama in .env
+docker compose --profile ollama up --build
+```
+
+The API service uses `OLLAMA_BASE_URL=http://ollama:11434` inside Docker Compose so it can reach the Ollama container.
+
+For a self-hosted API + Ollama stack without the web container:
 
 ```bash
 ./scripts/deploy.sh api
@@ -113,15 +123,32 @@ See [`docker-compose.prod.yml`](../docker-compose.prod.yml).
 
 ---
 
+## Self-hosted / private LLM (Ollama)
+
+To keep document text and inference off hosted APIs, set on the Render API (or local `.env`):
+
+```bash
+LLM_PROVIDER=ollama
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=http://consultationAI:11434   # Render private service hostname
+OLLAMA_MODEL=llama3.2:1b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+On Render, run a private Ollama service in the **same region** as the API and point `OLLAMA_BASE_URL` at its internal hostname. See [docs/privacy-and-security.md](privacy-and-security.md) for data-flow implications.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
 | Render build: `COPY src` not found | Set **Root Directory** to `apps/api` or use `dockerContext` in `render.yaml` |
-| Render crash: `IndexError` in `config.py` | Fixed: monorepo path detection walks parents safely in Docker |
-| `ollama_reachable: false` on `/health/ready` | API not in same region/network as `consultationAI`; check hostname casing |
+| `OPENAI_API_KEY is required` on startup | Set `OPENAI_API_KEY` on Render when `LLM_PROVIDER` or `EMBEDDING_PROVIDER` is `openai` |
+| `ollama_reachable: false` on `/health/ready` | Only applies when a provider is `ollama`; check hostname and network |
 | CORS errors in browser | Set `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` on Render API |
 | UI calls `localhost:8000` in prod | Set `NEXT_PUBLIC_BACKEND_URL` on Vercel, redeploy |
+| Evaluations fail: no test cases | Bundled cases seed on startup; confirm `/app/data/evals` on Render disk |
 | Free tier cold start ~50s | First request after idle wakes the Render instance |
 | Uploads vanish on Render | Attach disk at `/app/data` and set data path env vars |
 
@@ -129,20 +156,16 @@ See [`docker-compose.prod.yml`](../docker-compose.prod.yml).
 
 ## Legacy: Vercel all-in-one (serverless API)
 
-The repo previously deployed web + API together via Vercel Services (`/server/*`). That path is deprecated for production because:
+The repo previously deployed web + API together via Vercel Services (`/server/*`). That path is deprecated. See [docs/legacy-vercel-deploy.md](legacy-vercel-deploy.md).
 
-- Vercel cannot reach private `consultationAI`
-- Serverless `/tmp` storage is ephemeral
-- Tribunal runs can hit serverless timeouts
-
-For local experimentation with `vercel dev`, run the API separately (`uvicorn` or Render) and set `NEXT_PUBLIC_BACKEND_URL`.
+For local experimentation, run the API separately and set `NEXT_PUBLIC_BACKEND_URL`.
 
 ---
 
 ## Release checklist
 
 - [ ] Render API **Root Directory** = `apps/api`, disk at `/app/data`
-- [ ] Render env: `OLLAMA_BASE_URL=http://consultationAI:11434`, models, data paths, CORS
-- [ ] `GET /health` and `/health/ready` return 200 with `ollama_reachable: true`
+- [ ] Render env: `OPENAI_API_KEY`, `LLM_PROVIDER=openai`, `EMBEDDING_PROVIDER=openai`, CORS origins
+- [ ] `GET /health` and `/health/ready` return 200
 - [ ] Vercel `NEXT_PUBLIC_BACKEND_URL` = Render public URL
 - [ ] Corpus import + tribunal question works end-to-end

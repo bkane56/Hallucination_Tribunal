@@ -61,3 +61,17 @@ def test_judge_verdict_coerces_null_supporting_sources():
         }
     )
     assert verdict.supporting_sources == []
+
+
+def test_coerce_verdict_from_string():
+    from hallucination_tribunal.models.coercion import coerce_verdict
+
+    assert coerce_verdict("Supported") == Verdict.SUPPORTED
+    assert coerce_verdict("unknown-value") == "unknown-value"
+
+
+def test_coerce_reliability_score():
+    from hallucination_tribunal.models.coercion import coerce_reliability_score
+
+    assert coerce_reliability_score("Not Applicable") == "Not Applicable"
+    assert coerce_reliability_score("0.75") == 0.75

@@ -1,7 +1,9 @@
+import json
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from hallucination_tribunal.evaluations.service import EvaluationService
+from hallucination_tribunal.evaluations.service import EvaluationService, seed_eval_cases
 
 
 @pytest.mark.asyncio
@@ -37,3 +39,11 @@ async def test_evaluation_service_run(mock_orchestrator_cls, tmp_path, monkeypat
 
     assert result["run_id"]
     assert result["aggregate_metrics"]["total_cases"] == 1
+
+
+def test_seed_eval_cases_copies_bundled_file(tmp_path):
+    eval_dir = tmp_path / "evals"
+    seed_eval_cases(eval_dir)
+    assert (eval_dir / "test_cases.json").exists()
+    cases = json.loads((eval_dir / "test_cases.json").read_text(encoding="utf-8"))
+    assert len(cases) == 10

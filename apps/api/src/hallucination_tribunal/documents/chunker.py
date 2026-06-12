@@ -1,12 +1,16 @@
 """Document chunking utilities."""
 
+import tiktoken
+
 from hallucination_tribunal.core.config import get_settings
 from hallucination_tribunal.documents.extractors import ExtractedSegment
 from hallucination_tribunal.models.domain import Chunk
 
+_ENCODING = tiktoken.get_encoding("cl100k_base")
+
 
 def estimate_tokens(text: str) -> int:
-    return max(1, len(text.split()))
+    return max(1, len(_ENCODING.encode(text)))
 
 
 def chunk_segments(

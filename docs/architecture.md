@@ -16,12 +16,13 @@ See the system diagram in the Architecture page of the web app.
 ```text
 Browser
    └── Vercel (Next.js) ──HTTPS──► Render (FastAPI, /app/data disk)
-                                        └── private network ──► consultationAI (Ollama)
+                                        └── HTTPS ──► OpenAI (LLM + embeddings)
 ```
 
 - UI calls the Render API via `NEXT_PUBLIC_BACKEND_URL` (cross-origin; CORS on API).
-- API uses `OLLAMA_BASE_URL=http://consultationAI:11434` for chat and embeddings.
+- API uses OpenAI for chat and embeddings by default (`LLM_PROVIDER=openai`, `EMBEDDING_PROVIDER=openai`).
 - SQLite, ChromaDB, and uploads persist on Render disk at `/app/data`.
+- Optional self-hosted path: set providers to `ollama` and point `OLLAMA_BASE_URL` at a private Ollama service.
 
 ## Data Flow
 

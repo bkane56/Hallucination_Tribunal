@@ -12,6 +12,7 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     plan: free
+    # plan: starter  # $7/mo — no cold starts; swap when upgrading
     healthCheckPath: /health
     disk:
       name: tribunal-data
@@ -34,12 +35,6 @@ services:
         value: gpt-4o-mini
       - key: OPENAI_EMBEDDING_MODEL
         value: text-embedding-3-small
-      - key: OLLAMA_BASE_URL
-        value: http://consultationAI:11434
-      - key: OLLAMA_MODEL
-        value: llama3.2:1b
-      - key: OLLAMA_EMBEDDING_MODEL
-        value: nomic-embed-text
       - key: VECTOR_DB_PROVIDER
         value: chromadb
       - key: RETRIEVAL_MODE
